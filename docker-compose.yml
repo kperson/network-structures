@@ -1,0 +1,7 @@
+hub:
+  build: .
+  command: /bin/sh -c "sbt project simpleDemo run"
+  ports:
+   - "9091:9091"
+  volumes:
+   - .:/code
