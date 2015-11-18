@@ -15,4 +15,6 @@ project/boot/
 .boot
 .sbtboot
 .vagrant
-hello/
+artifactory.tar
+.sbtopts
+repositories

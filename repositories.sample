@@ -1,0 +1,4 @@
+[repositories]
+  local
+  ivy-releases: http://172.16.100.101:8050/artifactory/ivy/, [organization]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
+  maven-releases: http://172.16.100.101:8050/artifactory/maven/

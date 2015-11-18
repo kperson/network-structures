@@ -5,7 +5,6 @@ import java.io.{OutputStream, InputStream}
 import akka.actor.{ActorContext, Props, ActorRef, Actor}
 
 import org.scalatra.{MultiParams, SinatraPathPatternParser}
-
 import spray.can.Http
 import spray.can.Http.RegisterChunkHandler
 import spray.http.HttpHeaders.`Content-Type`

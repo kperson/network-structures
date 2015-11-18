@@ -1,13 +1,12 @@
 FROM ubuntu:14.04
 
-#BASE
+#Base
 RUN apt-get update
-RUN apt-get install -y python-software-properties software-properties-common
-RUN apt-get install -y vim git wget libfreetype6 libfontconfig bzip2  build-essential
+RUN apt-get install -y python-software-properties software-properties-common vim git wget libfreetype6 libfontconfig bzip2 build-essential
 RUN apt-get upgrade -y
 RUN apt-get install -y apparmor
 
-#Java
+#Java 7
 RUN \
   echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections && \
   add-apt-repository -y ppa:webupd8team/java && \
@@ -22,11 +21,10 @@ ENV JAVA_HOME /usr/lib/jvm/java-7-oracle
 RUN wget -O sbt.deb https://bintray.com/artifact/download/sbt/debian/sbt-0.13.9.deb
 RUN dpkg -i sbt.deb
 
-#SERVER Code
+#Server Code
+EXPOSE 8080
 WORKDIR /
 ADD . /code
 WORKDIR /code
-RUN compile stage
-cd /demo-simple
-COMMAND target/target
-EXPOSE 9090
+RUN sbt 'project hub' clean compile stage
+CMD ["hub/target/universal/stage/bin/hub", "--host", "0.0.0.0", "--port", "8080"]
