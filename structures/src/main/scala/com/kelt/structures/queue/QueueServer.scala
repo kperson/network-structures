@@ -98,12 +98,12 @@ trait QueueServer extends BasicSprayServer {
 
   def queueManager: ActorRef
 
-  get(s"/queue/:key/?") { (params, client) =>
+  get("/queue/:key/?") { (params, client) =>
     val key = params("key").head
     context.actorOf(Props(new QueueServerPullActor(client, queueManager, key)))
   }
 
-  post(s"/queue/:key/?") { (params, client, body) =>
+  post("/queue/:key/?") { (params, client, body) =>
 
     val key = params("key").head
     body match {

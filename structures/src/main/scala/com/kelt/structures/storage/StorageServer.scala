@@ -17,7 +17,7 @@ trait StorageServer extends BasicSprayServer {
 
   def storage: Storage
 
-  get(s"/storage/:key/?") { (params, client) =>
+  get("/storage/:key/?") { (params, client) =>
     val key = params("key").head
     val read = storage.read(key)
     read onSuccess {
@@ -35,14 +35,14 @@ trait StorageServer extends BasicSprayServer {
     (in, out)
   }
 
-  post(s"/storage/:key/?") { (params, client, body) =>
+  post("/storage/:key/?") { (params, client, body) =>
     val key = params("key").head
     body match {
       case SingleRequestBody(req) =>
         val (in, out) = setupStream
         val parts = req.asPartStream()
         val handler = context.actorOf(Props(new server.Uploader(sender, parts.head.asInstanceOf[ChunkedRequestStart], out)))
-        parts.tail.foreach (handler !)
+        parts.tail.foreach (x => handler ! x)
         storage.write(key, in)
 
       case ChunkedRequestBody(start) =>
@@ -55,7 +55,7 @@ trait StorageServer extends BasicSprayServer {
     }
   }
 
-  delete(s"/storage/:key/?") { (params, client, _) =>
+  delete("/storage/:key/?") { (params, client, _) =>
     val key = params("key").head
     storage.delete(key).onSuccess { case _ =>
       client ! HttpResponse(status = 204)

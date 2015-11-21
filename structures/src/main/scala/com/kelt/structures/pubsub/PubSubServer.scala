@@ -106,18 +106,18 @@ trait PubSubServer extends BasicSprayServer {
 
   def pubSubManager: ActorRef
 
-  get(s"/pubsub/:key/?") { (params, client) =>
+  get("/pubsub/:key/?") { (params, client) =>
     val key = params("key").head
     context.actorOf(Props(new PubSubSubscriberActor(client, pubSubManager, key)))
   }
 
-  get(s"/pubsub/:key/:padding/?") { (params, client) =>
+  get("/pubsub/:key/:padding/?") { (params, client) =>
     val key = params("key").head
     val padding = params("padding").head.toInt
     context.actorOf(Props(new PubSubSubscriberActor(client, pubSubManager, key, padding)))
   }
 
-  post(s"/pubsub/:key/?") { (params, client, body) =>
+  post("/pubsub/:key/?") { (params, client, body) =>
     val key = params("key").head
 
     body match {

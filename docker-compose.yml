@@ -1,6 +1,6 @@
 hub:
   build: .
-  command: sbt 'project hub' '~re-start --host 0.0.0.0 --port 8080 --storage /structure-data'
+  command: sbt 'project hub' clean '~re-start --host 0.0.0.0 --port 8080 --storage /structure-data/storage --directory /structure-data/directory'
   ports:
    - "9000:8080"
   volumes:

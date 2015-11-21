@@ -4,17 +4,15 @@ import java.io.{FileOutputStream, FileInputStream, File, InputStream}
 
 import com.kelt.structures.storage.{StorageNotFoundException, Storage}
 import com.kelt.structures.storage.Storage._
+
 import scala.concurrent.Future
 
-/**
- * Created by keltonperson on 11/17/15.
- */
+
 class FileStorage(path: File) extends Storage {
 
   if(!path.exists) {
     path.mkdirs()
   }
-  require(path.isDirectory)
 
   def write(key: String, inputStream: InputStream) : Future[Unit] = {
     val f = new File(path, key)

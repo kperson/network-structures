@@ -3,11 +3,12 @@ package com.kelt.structures.server
 import java.io.{OutputStream, InputStream}
 
 import akka.actor.{ActorContext, Props, ActorRef, Actor}
+import com.kelt.structures.directory.{CloseStorage, SaveBytes, WriteCommand}
 
 import org.scalatra.{MultiParams, SinatraPathPatternParser}
 import spray.can.Http
 import spray.can.Http.RegisterChunkHandler
-import spray.http.HttpHeaders.`Content-Type`
+import spray.http.HttpHeaders.{RawHeader, `Content-Type`}
 import spray.http.HttpMethods._
 import spray.http.MediaTypes._
 import spray.http._
@@ -167,9 +168,10 @@ class BasicSprayServer extends Actor {
 
 case class StreamAck()
 
-class Streamer(client: ActorRef, is: InputStream) extends Actor  {
+class Streamer(client: ActorRef, is: InputStream, contentType: Option[String] = None) extends Actor  {
 
-  val headers = List(`Content-Type`(ContentType(`application/octet-stream`)))
+  val mediaType = contentType.map(MediaType.custom(_)).getOrElse(`application/octet-stream`)
+  val headers = List(`Content-Type`(ContentType(mediaType)))
 
   client ! ChunkedResponseStart(HttpResponse(headers = headers, status = 200)).withAck(StreamAck())
   var iter: Iterator[Array[Byte]] = null
@@ -202,6 +204,20 @@ class Uploader(client: ActorRef, start: ChunkedRequestStart, out: OutputStream) 
     case e: ChunkedMessageEnd =>
       out.flush()
       out.close()
+      client ! HttpResponse(status = 204)
+      context.stop(self)
+  }
+}
+
+class DirectoryUploader(client: ActorRef, start: ChunkedRequestStart, write: (WriteCommand) => Unit) extends Actor  {
+
+  client ! CommandWrapper(SetRequestTimeout(Duration.Inf))
+
+  def receive = {
+    case c: MessageChunk =>
+      write(SaveBytes(c.data.toByteArray))
+    case e: ChunkedMessageEnd =>
+      write(CloseStorage())
       client ! HttpResponse(status = 204)
       context.stop(self)
   }
