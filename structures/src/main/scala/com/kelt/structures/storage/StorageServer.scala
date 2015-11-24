@@ -41,13 +41,13 @@ trait StorageServer extends BasicSprayServer {
       case SingleRequestBody(req) =>
         val (in, out) = setupStream
         val parts = req.asPartStream()
-        val handler = context.actorOf(Props(new server.Uploader(sender, parts.head.asInstanceOf[ChunkedRequestStart], out)))
+        val handler = context.actorOf(Props(new server.ServerToSourceUploader(sender, parts.head.asInstanceOf[ChunkedRequestStart], out)))
         parts.tail.foreach (x => handler ! x)
         storage.write(key, in)
 
       case ChunkedRequestBody(start) =>
         val (in, out) = setupStream
-        val handler = context.actorOf(Props(new server.Uploader(sender, start, out)))
+        val handler = context.actorOf(Props(new server.ServerToSourceUploader(sender, start, out)))
         sender ! RegisterChunkHandler(handler)
         storage.write(key, in)
 

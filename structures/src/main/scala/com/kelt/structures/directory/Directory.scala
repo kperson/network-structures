@@ -2,12 +2,10 @@ package com.kelt.structures.directory
 
 import java.io.{ByteArrayInputStream, InputStream}
 
+import com.kelt.structures.http._
+
 import scala.concurrent.{ExecutionContext, Future}
 
-
-sealed trait WriteCommand
-case class SaveBytes(bytes: Array[Byte]) extends WriteCommand
-case class CloseStorage() extends WriteCommand
 
 case class DirectoryListing(files: List[String], directories: List[String]) {
   def isEmpty = files.isEmpty && directories.isEmpty
@@ -19,6 +17,10 @@ trait Directory {
 
   def name: String
 
+  /**
+   *
+   * @return
+   */
   def directories: Future[List[Directory]]
 
   def files: Future[List[String]]
@@ -73,7 +75,7 @@ trait RichDirectory {
       val is = new ByteArrayInputStream(bytes)
       self.addFile(fileName).map { w =>
         w(SaveBytes(bytes))
-        w(CloseStorage())
+        w(CloseStorage)
         Unit
       }
     }

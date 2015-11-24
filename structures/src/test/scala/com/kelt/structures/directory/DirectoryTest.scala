@@ -7,7 +7,7 @@ import org.scalatest.time.{Seconds, Span}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-trait DirectoryTest  extends FlatSpec with Matchers with ScalaFutures {
+trait DirectoryTest extends FlatSpec with Matchers with ScalaFutures {
 
   def directory: Directory
 

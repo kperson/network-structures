@@ -9,6 +9,7 @@ import com.kelt.structures.server
 import com.kelt.structures.server.{Streamer, ChunkedRequestBody, SingleRequestBody, BasicSprayServer}
 
 import spray.can.Http.RegisterChunkHandler
+import spray.http.HttpHeaders.RawHeader
 import spray.http._
 import scala.concurrent.Future
 
@@ -34,7 +35,7 @@ trait DirectoryServer extends BasicSprayServer {
         case Some(ChildDirectory(dir)) =>
           dir.directoryListing onSuccess { case listing =>
             val entity = HttpEntity(ContentTypes.`application/json`, generate(listing))
-            client ! HttpResponse(status = 200, entity = entity)
+            client ! HttpResponse(status = 200, entity = entity, headers = List(RawHeader("X-Type", "Directory")))
           }
         case _=> send404(client)
       }
@@ -64,11 +65,11 @@ trait DirectoryServer extends BasicSprayServer {
           body match {
             case SingleRequestBody(req) =>
               val parts = req.asPartStream()
-              val handler = context.actorOf(Props(new server.DirectoryUploader(s, parts.head.asInstanceOf[ChunkedRequestStart], f)))
+              val handler = context.actorOf(Props(new server.ServerToSourceAsyncUploader(s, parts.head.asInstanceOf[ChunkedRequestStart], f)))
               parts.tail.foreach(x => handler ! x)
 
             case ChunkedRequestBody(start) =>
-              val handler = context.actorOf(Props(new server.DirectoryUploader(s, start, f)))
+              val handler = context.actorOf(Props(new server.ServerToSourceAsyncUploader(s, start, f)))
               sender ! RegisterChunkHandler(handler)
 
             case _ => send404(client)

@@ -3,6 +3,7 @@ package com.kelt.structures.directory.file
 import java.io.{InputStream, FileOutputStream, FileInputStream, File}
 
 import com.kelt.structures.directory._
+import com.kelt.structures.http._
 
 import org.apache.commons.io.FileUtils
 
@@ -61,7 +62,7 @@ case class FileDirectory(val name: String, rootPath: File, parent: Option[String
     def write(cmd: WriteCommand) {
       cmd match {
         case SaveBytes(bytes) => out.write(bytes)
-        case CloseStorage() =>
+        case CloseStorage =>
           out.flush()
           out.close()
       }

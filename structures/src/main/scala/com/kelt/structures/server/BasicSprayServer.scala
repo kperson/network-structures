@@ -3,7 +3,9 @@ package com.kelt.structures.server
 import java.io.{OutputStream, InputStream}
 
 import akka.actor.{ActorContext, Props, ActorRef, Actor}
-import com.kelt.structures.directory.{CloseStorage, SaveBytes, WriteCommand}
+
+import com.kelt.structures.http._
+import com.kelt.structures.storage.Storage._
 
 import org.scalatra.{MultiParams, SinatraPathPatternParser}
 import spray.can.Http
@@ -15,8 +17,6 @@ import spray.http._
 import spray.io.CommandWrapper
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
-
-import com.kelt.structures.storage.Storage._
 
 import scala.concurrent.{Promise, Future}
 import scala.concurrent.duration._
@@ -171,7 +171,7 @@ case class StreamAck()
 class Streamer(client: ActorRef, is: InputStream, contentType: Option[String] = None) extends Actor  {
 
   val mediaType = contentType.map(MediaType.custom(_)).getOrElse(`application/octet-stream`)
-  val headers = List(`Content-Type`(ContentType(mediaType)))
+  val headers = List(`Content-Type`(ContentType(mediaType)), RawHeader("X-Type", "File"))
 
   client ! ChunkedResponseStart(HttpResponse(headers = headers, status = 200)).withAck(StreamAck())
   var iter: Iterator[Array[Byte]] = null
@@ -194,7 +194,7 @@ class Streamer(client: ActorRef, is: InputStream, contentType: Option[String] = 
 }
 
 
-class Uploader(client: ActorRef, start: ChunkedRequestStart, out: OutputStream) extends Actor  {
+class ServerToSourceUploader(client: ActorRef, start: ChunkedRequestStart, out: OutputStream) extends Actor  {
 
   client ! CommandWrapper(SetRequestTimeout(Duration.Inf))
 
@@ -209,7 +209,7 @@ class Uploader(client: ActorRef, start: ChunkedRequestStart, out: OutputStream) 
   }
 }
 
-class DirectoryUploader(client: ActorRef, start: ChunkedRequestStart, write: (WriteCommand) => Unit) extends Actor  {
+class ServerToSourceAsyncUploader(client: ActorRef, start: ChunkedRequestStart, write: (WriteCommand) => Unit) extends Actor  {
 
   client ! CommandWrapper(SetRequestTimeout(Duration.Inf))
 
@@ -217,7 +217,7 @@ class DirectoryUploader(client: ActorRef, start: ChunkedRequestStart, write: (Wr
     case c: MessageChunk =>
       write(SaveBytes(c.data.toByteArray))
     case e: ChunkedMessageEnd =>
-      write(CloseStorage())
+      write(CloseStorage)
       client ! HttpResponse(status = 204)
       context.stop(self)
   }
