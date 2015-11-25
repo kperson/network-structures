@@ -2,10 +2,10 @@ package com.kelt.structures.storage
 
 import java.io._
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.io.Source
+import com.kelt.structures.util._
 
-case class StorageNotFoundException(key: String) extends RuntimeException(s"${key} not found")
+import scala.concurrent.{ExecutionContext, Future}
+
 
 trait Storage {
 
@@ -35,27 +35,6 @@ trait Storage {
 
 
 object Storage {
-
-  implicit class InputStreamExtensions(self: InputStream) {
-
-    def stream(bufferSize: Int) : Stream[Array[Byte]] = {
-      var buffer = new Array[Byte](bufferSize)
-      val stream = Stream.continually(self.read(buffer))
-        .takeWhile { x =>
-          if(x == -1) {
-            buffer = null
-            false
-          }
-          else {
-            true
-          }
-        }
-        .map {
-          buffer.take(_)
-        }
-      stream
-    }
-  }
 
   implicit class StorageExtensions(self: Storage) {
 

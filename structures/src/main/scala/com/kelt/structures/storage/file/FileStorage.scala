@@ -2,8 +2,9 @@ package com.kelt.structures.storage.file
 
 import java.io.{FileOutputStream, FileInputStream, File, InputStream}
 
-import com.kelt.structures.storage.{StorageNotFoundException, Storage}
-import com.kelt.structures.storage.Storage._
+import com.kelt.structures.http.ResourceNotFoundException
+import com.kelt.structures.storage.Storage
+import com.kelt.structures.util._
 
 import scala.concurrent.Future
 
@@ -32,7 +33,7 @@ class FileStorage(path: File) extends Storage {
       Future.successful(new FileInputStream(f))
     }
     else {
-      Future.failed(StorageNotFoundException(key))
+      Future.failed(ResourceNotFoundException(Some(key)))
     }
   }
 

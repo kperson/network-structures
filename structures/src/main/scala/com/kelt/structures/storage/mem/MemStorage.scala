@@ -2,7 +2,8 @@ package com.kelt.structures.storage.mem
 
 import java.io.{ByteArrayInputStream, InputStream}
 
-import com.kelt.structures.storage.{Storage, StorageNotFoundException}
+import com.kelt.structures.http.ResourceNotFoundException
+import com.kelt.structures.storage.Storage
 
 import org.apache.commons.io.IOUtils
 
@@ -20,7 +21,7 @@ class MemStorage extends Storage {
   }
 
   def read(key: String) : Future[InputStream] = {
-    cache.get(key).map(x => Future.successful(new ByteArrayInputStream(x))).getOrElse(Future.failed(StorageNotFoundException(key)))
+    cache.get(key).map(x => Future.successful(new ByteArrayInputStream(x))).getOrElse(Future.failed(ResourceNotFoundException(Some(key))))
   }
 
   def delete(key: String) : Future[Unit] = {

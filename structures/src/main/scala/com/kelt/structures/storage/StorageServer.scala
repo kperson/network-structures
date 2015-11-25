@@ -1,6 +1,7 @@
 package com.kelt.structures.storage
 
 import akka.actor.Props
+import com.kelt.structures.http.ResourceNotFoundException
 
 import com.kelt.structures.server
 import com.kelt.structures.server._
@@ -24,7 +25,7 @@ trait StorageServer extends BasicSprayServer {
       case is => context.actorOf(Props(new Streamer(client, is)))
     }
     read onFailure {
-      case StorageNotFoundException(key) =>
+      case ResourceNotFoundException(_) =>
         client ! HttpResponse(404)
     }
   }

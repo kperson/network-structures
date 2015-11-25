@@ -5,12 +5,13 @@ import java.net.URL
 
 import akka.actor._
 import akka.io.IO
+import com.kelt.structures.http.ResourceNotFoundException
+
+import com.kelt.structures.util._
 
 import spray.can.Http
 import spray.http._
 import spray.http.HttpMethods._
-
-import com.kelt.structures.storage.Storage._
 
 import scala.concurrent.{Promise, Future}
 
@@ -57,7 +58,7 @@ class Downloader(key: String, outStream: OutputStream, mc: ManagedConnection, pr
     case HttpResponse(status, _, _, _) if status.intValue == 404 =>
       outStream.flush()
       outStream.close()
-      promise.failure(StorageNotFoundException(key))
+      promise.failure(ResourceNotFoundException(Some(key)))
 
       context.stop(self)
     case res:HttpResponse =>
@@ -123,7 +124,7 @@ class StorageClient(urlStr: String)(implicit system: ActorSystem) extends Storag
     promise.future.flatMap { _ =>
       Future { in }
     }.recoverWith {
-      case ex: StorageNotFoundException =>
+      case ex: ResourceNotFoundException =>
         in.close()
         Future.failed(ex)
     }

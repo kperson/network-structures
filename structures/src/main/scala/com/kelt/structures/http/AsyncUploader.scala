@@ -8,13 +8,12 @@ import akka.io.IO
 import com.kelt.structures.util._
 
 import spray.can.Http
-import spray.http.HttpMethods._
 import spray.http._
 import scala.collection.mutable
 import scala.concurrent.Promise
 
 
-class AsyncUploader(url: URL, promise: Option[Promise[Unit]] = None)(implicit val actorSystem: ActorSystem) extends Actor {
+class AsyncUploader(url: URL, method: HttpMethod = HttpMethods.POST, headers: List[HttpHeader] = List.empty, promise: Option[Promise[Unit]] = None)(implicit actorSystem: ActorSystem) extends Actor {
 
   val buffer:scala.collection.mutable.Queue[WriteCommand] = mutable.Queue()
   IO(Http) ! Http.Connect(url.getHost, port = url.protocolAdjustedPort, sslEncryption = url.isSecure)
@@ -22,7 +21,7 @@ class AsyncUploader(url: URL, promise: Option[Promise[Unit]] = None)(implicit va
 
   def receive = {
     case Http.Connected(_, _) => {
-      sender ! ChunkedRequestStart(HttpRequest(POST, url.getPath))
+      sender ! ChunkedRequestStart(HttpRequest(method, url.getPath, headers = headers))
       server = Some(sender)
       self ! SendTrigger
     }

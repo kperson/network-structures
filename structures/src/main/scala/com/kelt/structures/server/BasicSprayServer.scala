@@ -5,9 +5,10 @@ import java.io.{OutputStream, InputStream}
 import akka.actor.{ActorContext, Props, ActorRef, Actor}
 
 import com.kelt.structures.http._
-import com.kelt.structures.storage.Storage._
+import com.kelt.structures.util._
 
 import org.scalatra.{MultiParams, SinatraPathPatternParser}
+
 import spray.can.Http
 import spray.can.Http.RegisterChunkHandler
 import spray.http.HttpHeaders.{RawHeader, `Content-Type`}
@@ -15,9 +16,7 @@ import spray.http.HttpMethods._
 import spray.http.MediaTypes._
 import spray.http._
 import spray.io.CommandWrapper
-
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
-
 import scala.concurrent.{Promise, Future}
 import scala.concurrent.duration._
 
@@ -55,9 +54,6 @@ sealed trait RequestBody {
 
 case class ChunkedRequestBody(start: ChunkedRequestStart) extends RequestBody
 case class SingleRequestBody(req: HttpRequest) extends RequestBody
-
-
-
 
 object BasicSprayServer {
 
