@@ -7,6 +7,7 @@ import kelt.structures.directory.DirectoryTest
 import org.apache.commons.io.FileUtils
 import org.scalatest.BeforeAndAfter
 
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class FileDirectoryTest extends DirectoryTest with BeforeAndAfter {
 

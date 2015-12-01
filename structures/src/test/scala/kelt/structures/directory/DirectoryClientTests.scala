@@ -69,7 +69,8 @@ class DirectoryClientTests extends FlatSpec with Matchers with ScalaFutures {
     val c = new DirectoryClient(endpoint) {
       override def outStreamForURL(url: URL) = out
     }
-    c.addFile("/hello", contents.getBytes)
+    val stream = c.addFile("/hello")
+    stream.write(contents.getBytes)
     val written = out.toString
     written should be (contents)
   }

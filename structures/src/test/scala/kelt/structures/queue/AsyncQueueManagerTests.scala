@@ -1,4 +1,4 @@
-package com.kelt.structures.queue
+package kelt.structures.queue
 
 import org.scalatest.{Matchers, FlatSpec}
 
