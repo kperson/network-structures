@@ -9,6 +9,7 @@ import spray.http.HttpResponse
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
+
 trait LockServer extends BasicSprayServer {
 
   def lockManager: ActorRef
@@ -17,16 +18,19 @@ trait LockServer extends BasicSprayServer {
 
   get("/lock/:resource/:acquireTimeout/:holdTimeout/?") { (params, client) =>
     val resource = params("resource").head
-    val lockTimeout = params("timeout").head.toLong.milliseconds
+    val acquireTimeout = params("acquireTimeout").head.toLong.milliseconds
     val holdTimeout = params("holdTimeout").head.toLong.milliseconds
-    val askTimeout: FiniteDuration = lockTimeout + 2.seconds
-    val fetch = (lockManager ? LockAcquireRequest(resource, lockTimeout, holdTimeout))(askTimeout).asInstanceOf[Future[LockGrant]]
-    fetch onSuccess { case _ =>
-      client ! HttpResponse(status = 200)
+    val askTimeout: FiniteDuration = acquireTimeout + 2.seconds
+    val fetch = (lockManager ? LockAcquireRequest(resource, acquireTimeout, holdTimeout))(askTimeout).asInstanceOf[Future[LockResponse]]
+
+
+    fetch onSuccess {
+      case _: LockGrant => client ! HttpResponse(status = 200)
+      case _: LockTimeout => client ! HttpResponse(status = 408)
     }
 
-    fetch onFailure { case _ =>
-      client ! HttpResponse(status = 408)
+    fetch onFailure { case x =>
+      client ! HttpResponse(status = 500)
     }
   }
 

@@ -38,8 +38,9 @@ class LockManagerTests extends FlatSpec with Matchers with ScalaFutures   {
     val resource = "r1"
     val manager = system.actorOf(Props(new LockManager))
     val l1 = (manager ? LockAcquireRequest(resource, 2.seconds, defaultHoldTimeout))
-    val l2 = (manager ? LockAcquireRequest(resource, 1.seconds, defaultHoldTimeout)).map(_ => true).recover {
-      case TimeoutException(_) => false
+    val l2 = (manager ? LockAcquireRequest(resource, 1.seconds, defaultHoldTimeout)).map {
+      case _: LockGrant => true
+      case _ => false
     }
 
     whenReady(l2, Timeout(Span(3, Seconds))) { x =>

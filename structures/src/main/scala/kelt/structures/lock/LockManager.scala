@@ -23,15 +23,19 @@ sealed trait LockAction {
 
 private[lock] case class LockCheck(lockId: Option[Long], resource: String, acquire: Boolean)
 
-case class LockGrant(resource: String)
 
-case class LockAcquire(resource: String, promise: Promise[LockGrant], id: Long, holdTimeOut: FiniteDuration) extends LockAction
-case class LockRelease(resource: String, id: Long) extends LockAction
+sealed trait LockResponse
 
-case class LockAcquireRequest(resource: String, acquireTimeout: FiniteDuration, holdTimeOut: FiniteDuration)
-case class LockReleaseRequest(resource: String, auto: Boolean = false)
+private[lock] case class LockGrant(resource: String) extends LockResponse
+private[lock] case class LockTimeout(timeout: FiniteDuration) extends LockResponse
 
-case object InitManager
+
+private[lock] case class LockAcquire(resource: String, promise: Promise[LockResponse], id: Long, holdTimeOut: FiniteDuration) extends LockAction
+private[lock] case class LockRelease(resource: String, id: Long) extends LockAction
+
+private[lock] case class LockAcquireRequest(resource: String, acquireTimeout: FiniteDuration, holdTimeOut: FiniteDuration)
+private[lock] case class LockReleaseRequest(resource: String, auto: Boolean = false)
+
 
 class LockManager extends Actor {
 
@@ -43,14 +47,16 @@ class LockManager extends Actor {
   context.system.eventStream.subscribe(self, classOf[DeadLetter])
 
   def receive = {
-    case LockAcquireRequest(resource, acquireTimeout, holdTimeout) => lock(resource, acquireTimeout, holdTimeout).pipeTo(sender)
+    case LockAcquireRequest(resource, acquireTimeout, holdTimeout) =>
+      lock(resource, acquireTimeout, holdTimeout).pipeTo(sender)
     case LockReleaseRequest(resource, auto) => unlock(resource)
     case LockCheck(lockId, resource, acquire) => check(lockId, resource, acquire)
     case DeadLetter(LockGrant(resource), from, to) => self ! LockReleaseRequest(resource, true)
   }
 
-  def lock(resource: String, acquireTimeout: FiniteDuration, holdTimeout: FiniteDuration) : Future[LockGrant] = {
-    val promise = Promise[LockGrant]()
+
+  def lock(resource: String, acquireTimeout: FiniteDuration, holdTimeout: FiniteDuration) : Future[LockResponse] = {
+    val promise = Promise[LockResponse]()
     val queue = queueForResource(resource)
     val acquisition = LockAcquire(resource, promise, next(resource), holdTimeout)
     queue.append(acquisition)
@@ -58,12 +64,14 @@ class LockManager extends Actor {
     self ! LockCheck(Some(acquisition.id), resource, true)
     context.system.scheduler.scheduleOnce(acquireTimeout) {
       if(!promise.isCompleted) {
-        promise.failure(TimeoutException(acquireTimeout))
-        self ! LockReleaseRequest(resource)
+        promise.success(LockTimeout(acquireTimeout))
+        unlock(resource, Some(acquisition.id))
       }
     }
     promise.future
   }
+
+
 
   def unlock(resource: String, mustHaveId: Option[Long] = None) {
     self ! LockCheck(mustHaveId, resource, false)
@@ -95,23 +103,29 @@ class LockManager extends Actor {
           }
         case (LockRelease(r, id), Some(lId)) if !acquire && r == resource && lId == id =>
           queue.remove(0)
-          clean(resource)
-          self ! LockCheck(Some(id + 1), resource, true)
+          if(clean(resource)) {
+            self ! LockCheck(Some(id + 1), resource, true)
+          }
         case (LockRelease(r, id), None) if !acquire && r == resource =>
           queue.remove(0)
-          clean(resource)
-          self ! LockCheck(Some(id + 1), resource, true)
+          if(clean(resource)) {
+            self ! LockCheck(Some(id + 1), resource, true)
+          }
 
         case _ =>
       }
     }
   }
 
-  private def clean(resource: String) {
+  private def clean(resource: String) : Boolean = {
     val queue = queueForResource(resource)
     if(queue.isEmpty) {
       queues.remove(resource)
       nextIds.remove(resource)
+      false
+    }
+    else {
+      true
     }
   }
 
