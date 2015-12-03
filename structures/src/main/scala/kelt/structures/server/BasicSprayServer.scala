@@ -204,17 +204,3 @@ class ServerToSourceUploader(client: ActorRef, start: ChunkedRequestStart, out: 
       context.stop(self)
   }
 }
-
-class ServerToSourceAsyncUploader(client: ActorRef, start: ChunkedRequestStart, write: (WriteCommand) => Unit) extends Actor  {
-
-  client ! CommandWrapper(SetRequestTimeout(Duration.Inf))
-
-  def receive = {
-    case c: MessageChunk =>
-      write(SaveBytes(c.data.toByteArray))
-    case e: ChunkedMessageEnd =>
-      write(CloseStorage)
-      client ! HttpResponse(status = 204)
-      context.stop(self)
-  }
-}

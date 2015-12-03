@@ -45,9 +45,7 @@ class PubSubPushActor(url: URL) extends Actor {
       }
     case p @ BytePayload(bytes) =>
       buffer.enqueue(bytes)
-      if(buffer.length == 1 && server != None) {
-        self ! Send
-      }
+      server.foreach { ref => self ! Send }
     case PeerClosed =>
       println("push peer closed")
       self ! PubSubConnectRetry

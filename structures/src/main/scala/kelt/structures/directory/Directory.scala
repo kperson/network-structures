@@ -1,6 +1,6 @@
 package kelt.structures.directory
 
-import java.io.{ByteArrayInputStream, InputStream}
+import java.io.{OutputStream, ByteArrayInputStream, InputStream}
 
 import kelt.structures.http._
 
@@ -27,7 +27,7 @@ trait Directory {
 
   def fileContents(path: List[String]): Future[Option[InputStream]]
 
-  def addFile(fileName: String): Future[(WriteCommand) => Unit]
+  def addFile(fileName: String): OutputStream
 
   def deleteFile(path: List[String]): Future[Unit]
 
@@ -71,13 +71,10 @@ trait RichDirectory {
 
     import self.ec
 
-    def addFile(fileName: String, bytes: Array[Byte]): Future[Unit] = {
-      val is = new ByteArrayInputStream(bytes)
-      self.addFile(fileName).map { w =>
-        w(SaveBytes(bytes))
-        w(CloseStorage)
-        Unit
-      }
+    def addFile(fileName: String, bytes: Array[Byte]) {
+      val stream = self.addFile(fileName)
+      stream.write(bytes)
+      stream.close()
     }
 
     def directory(path: String): Future[Option[Directory]] = {

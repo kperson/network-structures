@@ -47,7 +47,7 @@ class DirectoryClientTests extends FlatSpec with Matchers with ScalaFutures {
 
     val str = "hello world"
     val c = new DirectoryClient(endpoint) {
-      override def request(req: HttpRequest)(implicit system: ActorSystem, timeout: AkkaTimeout) : Future[HttpResponse] = {
+      override def request(req: HttpRequest)(implicit system: ActorSystem) : Future[HttpResponse] = {
         Future.successful(HttpResponse(StatusCodes.OK, HttpEntity(ContentTypes.`text/plain(UTF-8)`, str), headers = List(RawHeader("X-Type", "File"))))
       }
     }

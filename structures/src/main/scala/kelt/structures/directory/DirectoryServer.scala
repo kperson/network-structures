@@ -59,18 +59,18 @@ trait DirectoryServer extends BasicSprayServer {
           case 1 => Future.successful(directory)
           case _ => directory.makeDirectory(path.take(path.length - 1))
         }
-        val uploadHandler = uploadDir.flatMap { x =>
+        val uploadHandler = uploadDir.map { x =>
           x.addFile(path.last)
         }
         uploadHandler.onSuccess { case f =>
           body match {
             case SingleRequestBody(req) =>
               val parts = req.asPartStream()
-              val handler = context.actorOf(Props(new server.ServerToSourceAsyncUploader(s, parts.head.asInstanceOf[ChunkedRequestStart], f)))
+              val handler = context.actorOf(Props(new server.ServerToSourceUploader(s, parts.head.asInstanceOf[ChunkedRequestStart], f)))
               parts.tail.foreach(x => handler ! x)
 
             case ChunkedRequestBody(start) =>
-              val handler = context.actorOf(Props(new server.ServerToSourceAsyncUploader(s, start, f)))
+              val handler = context.actorOf(Props(new server.ServerToSourceUploader(s, start, f)))
               sender ! RegisterChunkHandler(handler)
 
             case _ => send404(client)

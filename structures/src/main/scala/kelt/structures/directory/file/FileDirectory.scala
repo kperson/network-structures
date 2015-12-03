@@ -1,9 +1,8 @@
 package kelt.structures.directory.file
 
-import java.io.{InputStream, FileOutputStream, FileInputStream, File}
+import java.io._
 
 import kelt.structures.directory._
-import kelt.structures.http._
 
 import org.apache.commons.io.FileUtils
 
@@ -55,19 +54,9 @@ case class FileDirectory(val name: String, rootPath: File, parent: Option[String
     }
   }
 
-  def addFile(fileName: String) : Future[(WriteCommand) => Unit] = {
+  def addFile(fileName: String): OutputStream = {
     val f = new File(new File(rootPath, relativePath), fileName)
-    val out = new FileOutputStream(f)
-
-    def write(cmd: WriteCommand) {
-      cmd match {
-        case SaveBytes(bytes) => out.write(bytes)
-        case CloseStorage =>
-          out.flush()
-          out.close()
-      }
-    }
-    Future.successful(write)
+    new FileOutputStream(f)
   }
 
   def deleteFile(path: List[String]) : Future[Unit] = {
