@@ -13,7 +13,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 
-class LockManagerTests extends FlatSpec with Matchers with ScalaFutures   {
+class LockManagerTest extends FlatSpec with Matchers with ScalaFutures {
 
   val defaultHoldTimeout = 10.seconds
 
@@ -23,11 +23,10 @@ class LockManagerTests extends FlatSpec with Matchers with ScalaFutures   {
     implicit val timeout = akka.util.Timeout(2.seconds)
     val resource = "r1"
     val manager = system.actorOf(Props(new LockManager))
-    val lockAcquistion = (manager ? LockAcquireRequest(resource, 2.seconds, defaultHoldTimeout))
-    whenReady(lockAcquistion, Timeout(Span(2, Seconds))) { x =>
+    val lockAcquisition = (manager ? LockAcquireRequest(resource, 2.seconds, defaultHoldTimeout))
+    whenReady(lockAcquisition, Timeout(Span(2, Seconds))) { x =>
       x should be (LockGrant(resource))
     }
-
   }
 
   "LockManager" should "queue a lock" in {

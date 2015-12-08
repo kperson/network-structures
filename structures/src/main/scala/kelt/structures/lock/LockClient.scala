@@ -21,7 +21,7 @@ import spray.http.{HttpMethods, HttpRequest}
  */
 class LockClient(endpoint: String)(implicit system: ActorSystem) extends SprayRequest {
 
-  val basURL = new URL(endpoint)
+  val baseURL = new URL(if(endpoint.endsWith("/")) endpoint else endpoint + "/")
 
   import system.dispatcher
 
@@ -33,7 +33,7 @@ class LockClient(endpoint: String)(implicit system: ActorSystem) extends SprayRe
    * @return a Future when the lock is granted
    */
   def lock(resource: String, acquireTimeout: FiniteDuration, holdTimeout: FiniteDuration): Future[String] = {
-    val url = new URL(basURL, s"/${resource}/${acquireTimeout.toMillis}/${holdTimeout.toMillis}/")
+    val url = new URL(baseURL, s"/${resource}/${acquireTimeout.toMillis}/${holdTimeout.toMillis}/")
     val lockRequest = request(HttpRequest(HttpMethods.POST, url.toSprayUri))
     lockRequest.map(_ => resource).recoverWith {
       case FailedHttpResponse(res) if res.status.intValue == 408 =>
@@ -47,7 +47,7 @@ class LockClient(endpoint: String)(implicit system: ActorSystem) extends SprayRe
    * @return a Future upon success
    */
   def unlock(resource: String): Future[Unit] = {
-    val url = new URL(basURL, s"/${resource}/")
+    val url = new URL(baseURL, s"/${resource}/")
     request(HttpRequest(HttpMethods.DELETE, url.toSprayUri)).map(_ => Unit)
   }
 

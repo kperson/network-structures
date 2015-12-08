@@ -10,4 +10,4 @@ WORKDIR /code
 RUN sbt 'project hub' clean compile stage
 RUN mkdir /structure-data
 VOLUME /structure-data
-CMD ["hub/target/universal/stage/bin/hub", "--host", "0.0.0.0", "--port", "8080", "--storage", "/structure-data/storage", "--directory", "/structure-data/directory"]
+CMD ["hub/target/universal/stage/bin/hub", "--host", "0.0.0.0", "--port", "8080", "--directory", "/structure-data/directory"]

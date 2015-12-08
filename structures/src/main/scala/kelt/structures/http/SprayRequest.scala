@@ -19,7 +19,7 @@ trait SprayRequest {
     import system.dispatcher
 
     //we don't want the ask to timeout, the HTTP connection can timeout if necessary
-    implicit val timeout:Timeout = 365.days
+    implicit val timeout:Timeout = 200.days
 
     (IO(Http) ? req).mapTo[HttpResponse].flatMap {
       case r @ HttpResponse(status, _, _, _) if status.intValue < 400 =>

@@ -11,7 +11,7 @@ import kelt.structures.storage.file.FileStorage
 import spray.can.Http
 
 
-case class ServerArguments(host: String = "0.0.0.0", port: Int = 8080, storagePath: String = "/tmp/structure-path/storage", directoryPath: String = "/tmp/structure-path/directory")
+case class ServerArguments(host: String = "0.0.0.0", port: Int = 8080, directoryPath: String = "/tmp/structure-path/directory")
 
 object Main extends App  {
 
@@ -28,10 +28,6 @@ object Main extends App  {
       c.copy(port = x)
     } text("the port the server will bind to")
 
-    opt[String]("storage") action { (x, c) =>
-      c.copy(storagePath = x)
-    }
-
     opt[String]("directory") action { (x, c) =>
       c.copy(directoryPath = x)
     }
@@ -45,7 +41,6 @@ object Main extends App  {
 
       val handler = system.actorOf(Props(
         new HubServer(
-          new FileStorage(new File(config.storagePath)),
           new FileDirectory("root", new File(config.directoryPath))
         )).withDispatcher("akka.pubsub-dispatcher"))
       IO(Http) ! Http.Bind(handler, interface = config.host, port = config.port)

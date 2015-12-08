@@ -12,7 +12,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 
-class CountManagerTests extends FlatSpec with Matchers with ScalaFutures {
+class CountManagerTest extends FlatSpec with Matchers with ScalaFutures {
 
   "CountManager" should "increment" in {
     implicit val system = ActorSystem("c1")
@@ -24,7 +24,7 @@ class CountManagerTests extends FlatSpec with Matchers with ScalaFutures {
       manager ? ResourceCountRequest(resource)
     }.asInstanceOf[Future[ResourceCountResponse]]
     whenReady(inc, Timeout(Span(3, Seconds))) { a =>
-      a.amount should be (20)
+      a.count should be (20)
     }
   }
 
@@ -40,7 +40,7 @@ class CountManagerTests extends FlatSpec with Matchers with ScalaFutures {
       manager ? ResourceCountRequest(resource)
     }.asInstanceOf[Future[ResourceCountResponse]]
     whenReady(inc, Timeout(Span(3, Seconds))) { a =>
-      a.amount should be (0)
+      a.count should be (0)
     }
   }
 
@@ -58,7 +58,7 @@ class CountManagerTests extends FlatSpec with Matchers with ScalaFutures {
       manager ? ResourceCountRequest(resource)
     }.asInstanceOf[Future[ResourceCountResponse]]
     whenReady(inc, Timeout(Span(3, Seconds))) { a =>
-      a.amount should be (30)
+      a.count should be (30)
     }
   }
 
@@ -76,7 +76,7 @@ class CountManagerTests extends FlatSpec with Matchers with ScalaFutures {
       manager ? ResourceCountRequest(resource)
     }.asInstanceOf[Future[ResourceCountResponse]]
     whenReady(inc, Timeout(Span(3, Seconds))) { a =>
-      a.amount should be (50)
+      a.count should be (50)
     }
   }
 
