@@ -7,14 +7,15 @@ import akka.util.{Timeout => AkkaTimeout}
 
 import com.codahale.jerkson.Json._
 import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{Matchers, FlatSpec}
-import spray.http.HttpHeaders.RawHeader
 
+import spray.http.HttpHeaders.RawHeader
 import spray.http._
+
 import scala.concurrent.duration._
 import scala.concurrent.Future
 
@@ -30,7 +31,7 @@ class DirectoryClientTests extends FlatSpec with Matchers with ScalaFutures {
 
     val listing = DirectoryListing(List("f1.txt", "f2.txt"), List("dir1", "dir2"))
     val c = new DirectoryClient(endpoint) {
-      override def request(req: HttpRequest)(implicit system: ActorSystem, timeout: AkkaTimeout) : Future[HttpResponse] = {
+      override def request(req: HttpRequest)(implicit system: ActorSystem) : Future[HttpResponse] = {
         Future.successful(HttpResponse(StatusCodes.OK, HttpEntity(ContentTypes.`application/json`, generate(listing)), headers = List(RawHeader("X-Type", "Directory"))))
       }
     }

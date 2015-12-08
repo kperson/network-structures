@@ -1,6 +1,4 @@
 package kelt.structures
 
 
-package object directory extends RichDirectory {
-
-}
+package object directory extends RichDirectory

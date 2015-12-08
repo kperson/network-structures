@@ -52,11 +52,10 @@ trait DirectoryTest extends FlatSpec with Matchers with ScalaFutures {
   "Directory" should "create a file" in {
     val contents = "contents"
     val file = "hello.txt"
-    val makeFetch = directory.addFile(file, contents.getBytes).flatMap { s =>
-      directory.fileContents(file)
-    }
+    val makeFetch = directory.addFile(file, contents.getBytes)
+    val fetch = directory.fileContents(file)
 
-    whenReady(makeFetch, timeout(Span(2, Seconds))) { d =>
+    whenReady(fetch, timeout(Span(2, Seconds))) { d =>
       val is = d.get
       val bytes = IOUtils.toByteArray(is)
       is.close()
@@ -68,13 +67,13 @@ trait DirectoryTest extends FlatSpec with Matchers with ScalaFutures {
   "Directory" should "delete a file" in {
     val contents = "contents"
     val file = "hello1.txt"
-    val makeDeleteFetch = directory.addFile(file, contents.getBytes).flatMap { s =>
-      directory.deleteFile(file)
-    }.flatMap { _ =>
+    directory.addFile(file, contents.getBytes)
+
+    val deleteFetch = directory.deleteFile(file).flatMap { case _ =>
       directory.fileContents(file)
     }
 
-    whenReady(makeDeleteFetch, timeout(Span(2, Seconds))) { is =>
+    whenReady(deleteFetch, timeout(Span(2, Seconds))) { is =>
       is should be(None)
     }
   }

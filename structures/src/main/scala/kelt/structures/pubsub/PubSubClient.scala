@@ -45,7 +45,9 @@ class PubSubPushActor(url: URL) extends Actor {
       }
     case p @ BytePayload(bytes) =>
       buffer.enqueue(bytes)
-      server.foreach { ref => self ! Send }
+      if(buffer.length == 1) {
+        server.foreach { ref => self ! Send }
+      }
     case PeerClosed =>
       println("push peer closed")
       self ! PubSubConnectRetry
@@ -92,9 +94,9 @@ class PubSubPullActor(url: URL, pubSub: PubSub[Array[Byte]]) extends Actor {
 }
 
 
-class PubSubClient(val channel: String, pubSubURL: String)(implicit system: ActorSystem) extends PubSub[Array[Byte]] {
+class PubSubClient(val channel: String, endpoint: String)(implicit system: ActorSystem) extends PubSub[Array[Byte]] {
 
-  val url = new URL(new URL(pubSubURL), s"/${channel}/")
+  val url = new URL(new URL(endpoint), s"/${channel}/")
   val push = system.actorOf(Props(new PubSubPushActor(url)))
   val pull = system.actorOf(Props(new PubSubPullActor(url, this)))
 

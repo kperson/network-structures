@@ -3,8 +3,6 @@ package kelt.structures.lock
 import akka.actor.{DeadLetter, Actor}
 import akka.pattern.pipe
 
-import kelt.structures.http.TimeoutException
-
 import scala.concurrent.{Future, Promise}
 import scala.collection.mutable.{Map => MutableMap, ListBuffer => MutableList }
 import scala.concurrent.duration.FiniteDuration
@@ -47,8 +45,7 @@ class LockManager extends Actor {
   context.system.eventStream.subscribe(self, classOf[DeadLetter])
 
   def receive = {
-    case LockAcquireRequest(resource, acquireTimeout, holdTimeout) =>
-      lock(resource, acquireTimeout, holdTimeout).pipeTo(sender)
+    case LockAcquireRequest(resource, acquireTimeout, holdTimeout) => lock(resource, acquireTimeout, holdTimeout).pipeTo(sender)
     case LockReleaseRequest(resource, auto) => unlock(resource)
     case LockCheck(lockId, resource, acquire) => check(lockId, resource, acquire)
     case DeadLetter(LockGrant(resource), from, to) => self ! LockReleaseRequest(resource, true)

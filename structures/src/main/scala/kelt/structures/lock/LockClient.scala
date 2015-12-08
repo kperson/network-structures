@@ -48,7 +48,7 @@ class LockClient(endpoint: String)(implicit system: ActorSystem) extends SprayRe
    */
   def unlock(resource: String): Future[Unit] = {
     val url = new URL(basURL, s"/${resource}/")
-    request(HttpRequest(HttpMethods.DELETE, url.toSprayUri))(system).map(_ => Unit)
+    request(HttpRequest(HttpMethods.DELETE, url.toSprayUri)).map(_ => Unit)
   }
 
 }
