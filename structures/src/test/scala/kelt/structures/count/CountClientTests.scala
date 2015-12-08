@@ -2,8 +2,8 @@ package kelt.structures.count
 
 import akka.actor.ActorSystem
 
-import kelt.structures.fixtures.HubServerSpec
-import kelt.structures.util.TimeoutConversions._
+import kelt.structures.HubServerSpec
+import kelt.structures.util.TestUtils._
 
 import org.scalatest.{FlatSpec, Matchers}
 import org.scalatest.concurrent.ScalaFutures
@@ -12,7 +12,6 @@ import scala.concurrent.duration._
 import scala.language.implicitConversions
 
 class CountClientTest extends FlatSpec with Matchers with ScalaFutures with HubServerSpec {
-
 
 
   "CountClient" should "increment count" in withServer { (host, port) =>

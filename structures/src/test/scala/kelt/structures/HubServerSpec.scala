@@ -1,4 +1,4 @@
-package kelt.structures.fixtures
+package kelt.structures
 
 import java.io.File
 import java.net.ServerSocket

@@ -124,7 +124,10 @@ class BasicSprayServer extends Actor {
       }.headOption match {
         case Some((params, handler)) =>
           handler(params, sender, SingleRequestBody(req))
-        case _ => send404(sender)
+        case _ =>
+          println("404-----------")
+          println(path)
+          send404(sender)
       }
     }
     case req @ HttpRequest(DELETE, Uri.Path(path), header, _, _) => {
@@ -144,7 +147,10 @@ class BasicSprayServer extends Actor {
           }.headOption match {
             case Some((params, handler)) =>
               handler(params, sender, ChunkedRequestBody(chunk))
-            case _ => send404(sender)
+            case _ =>
+              println("404-----------")
+              println(path)
+              send404(sender)
           }
         }
         case req@HttpRequest(DELETE, Uri.Path(path), header, _, _) => {

@@ -23,14 +23,12 @@ trait LockServer extends BasicSprayServer {
     val askTimeout: FiniteDuration = acquireTimeout + 2.seconds
     val fetch = (lockManager ? LockAcquireRequest(resource, acquireTimeout, holdTimeout))(askTimeout).asInstanceOf[Future[LockResponse]]
 
-
     fetch onSuccess {
-      case _: LockGrant => client ! HttpResponse(status = 200)
+      case x: LockGrant => client ! HttpResponse(status = 200)
       case _: LockTimeout => client ! HttpResponse(status = 408)
     }
 
-    fetch onFailure { case x =>
-      client ! HttpResponse(status = 500)
+    fetch onFailure { case _ => client ! HttpResponse(status = 500)
     }
   }
 

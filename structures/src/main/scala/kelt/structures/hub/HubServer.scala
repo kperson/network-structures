@@ -13,8 +13,8 @@ class HubServer(val directory: Directory)
   extends PubSubServer
   with QueueServer
   with DirectoryServer
-  with LockServer
   with CountServer
+  with LockServer
 {
 
   lazy val lockManager = context.actorOf(Props[LockManager])
