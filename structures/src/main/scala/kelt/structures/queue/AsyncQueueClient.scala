@@ -88,7 +88,6 @@ class AsyncQueueClientPullActor(url: URL, promise: Promise[Array[Byte]]) extends
         println(s"attempting connection at ${System.currentTimeMillis}")
         io ! Http.Connect(url.getHost, port = url.protocolAdjustedPort, sslEncryption = url.isSecure)
       }
-    case x => println(x)
   }
 
 }

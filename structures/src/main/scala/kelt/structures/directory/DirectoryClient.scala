@@ -26,7 +26,7 @@ case class DirectoryContent(listing: DirectoryListing) extends PathContents
  */
 class DirectoryClient(endpoint: String)(implicit system: ActorSystem) extends SprayRequest {
 
-  val basURL = new URL(endpoint)
+  val baseURL = new URL(if(endpoint.endsWith("/")) endpoint else endpoint + "/")
 
   import system.dispatcher
 
@@ -36,7 +36,7 @@ class DirectoryClient(endpoint: String)(implicit system: ActorSystem) extends Sp
    * @return an outstream to store data
    */
   def addFile(path: String) : OutputStream = {
-    val url = new URL(basURL, path)
+    val url = new URL(baseURL, path)
     outStreamForURL(url)
   }
 
@@ -46,7 +46,7 @@ class DirectoryClient(endpoint: String)(implicit system: ActorSystem) extends Sp
    * @return a future when completed
    */
   def delete(path: String) : Future[Unit] = {
-    val url = new URL(basURL, path)
+    val url = new URL(baseURL, cleanPath(path))
     request(HttpRequest(HttpMethods.DELETE, url.toSprayUri)).map(_ => Unit)
   }
 
@@ -56,12 +56,21 @@ class DirectoryClient(endpoint: String)(implicit system: ActorSystem) extends Sp
    * @return path contents enum
    */
   def fetch(path: String) : Future[PathContents] = {
-    val url = new URL(basURL, path)
+    val url = new URL(baseURL, cleanPath(path))
     request(HttpRequest(HttpMethods.GET, url.toSprayUri)).map {
       case r@HttpResponse(status, _, _, _) if r.headers.find(_.name == "X-Type").map(_.value) == Some("File") =>
         FileContent(r.entity.data.toChunkStream(4096).map(_.toByteArray))
       case r@HttpResponse(status, _, _, _) =>
         DirectoryContent(parse[DirectoryListing](r.entity.data.asString))
+    }
+  }
+
+  private def cleanPath(path: String) = {
+    if(path.startsWith("/")) {
+      path.substring(1, path.length)
+    }
+    else {
+      path
     }
   }
 
@@ -75,7 +84,7 @@ trait RichDirectoryClient {
 
   implicit class DirectoryClientExtension(self: DirectoryClient) {
 
-    /** adds a file from an inputstream
+    /** adds a file from an input stream
      *
      * @param path file path
      * @param inputStream input to upload
