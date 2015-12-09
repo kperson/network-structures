@@ -95,25 +95,23 @@ class PubSubManager[T]  {
   }
 
   def addListener(key: String, autoAck:Boolean = false)(callback:(DataReceived[T]) => Unit) : Long = {
-    //lock.synchronized {
-      val listenerId = nextListenerId
-      nextListenerId = nextListenerId + 1
-      val start = startDataId(key)
-      if (autoAck) {
-        listenerTable(key)(listenerId) = WaitingFor({ data =>
-          callback(data)
-          waitForNext(key, data.dataId, listenerId)
-        }, ReadyFor(start))
-      }
-      else {
-        listenerTable(key)(listenerId) = WaitingFor(callback, ReadyFor(start))
-        //println(s"add listener with ready for ${start}, size: ${keyTable(key).listeners.size}, key: ${key}")
-      }
 
-      val listenerCount = countForDataId(key, start)
-      updateListenerCountTable(key, start, listenerCount)
-      listenerId
-    //}
+    val listenerId = nextListenerId
+    nextListenerId = nextListenerId + 1
+    val start = startDataId(key)
+    if (autoAck) {
+      listenerTable(key)(listenerId) = WaitingFor({ data =>
+        callback(data)
+        waitForNext(key, data.dataId, listenerId)
+      }, ReadyFor(start))
+    }
+    else {
+      listenerTable(key)(listenerId) = WaitingFor(callback, ReadyFor(start))
+    }
+
+    val listenerCount = countForDataId(key, start)
+    updateListenerCountTable(key, start, listenerCount)
+    listenerId
   }
 
   private def countForDataId(key: String, dataId: Long): Int = {
@@ -127,37 +125,32 @@ class PubSubManager[T]  {
   }
 
   def save(key: String, payload: T) = {
-    //lock.synchronized {
-      val nextDataId = next(key)
-      val listenerCount = countForDataId(key, nextDataId)
-      updateListenerCountTable(key, nextDataId, listenerCount)
-      dataTable(key)(nextDataId) = Data(payload)
-      checkForDeliveryAndSend(nextDataId, key)
-      nextDataId
-    //}
+    val nextDataId = next(key)
+    val listenerCount = countForDataId(key, nextDataId)
+    updateListenerCountTable(key, nextDataId, listenerCount)
+    dataTable(key)(nextDataId) = Data(payload)
+    checkForDeliveryAndSend(nextDataId, key)
+    nextDataId
   }
 
   def removeListener(key: String, listenerId: Long) {
-    //lock.synchronized {
-      val last = lastDataId(key)
-      listenerTable(key)(listenerId).dataStatus match {
-        case ReadyFor(dataId) =>
-          for { x <- dataId to last } {
-            decListenerCountTable(key)(x)
-          }
-          decListenerCountTable(key)(dataId)
-        case OnWire(dataId) =>
-          for { x <- (dataId + 1) to last } {
-            decListenerCountTable(key)(x)
-          }
-      }
-      listenerTable(key).remove(listenerId)
+    val last = lastDataId(key)
+    listenerTable(key)(listenerId).dataStatus match {
+      case ReadyFor(dataId) =>
+        for { x <- dataId to last } {
+          decListenerCountTable(key)(x)
+        }
+        decListenerCountTable(key)(dataId)
+      case OnWire(dataId) =>
+        for { x <- (dataId + 1) to last } {
+          decListenerCountTable(key)(x)
+        }
+    }
+    listenerTable(key).remove(listenerId)
 
-      //if nobody is listening, just delete all references to this channel
-      if(listenerTable(key).isEmpty) {
-        keyMap.remove(key)
-      }
-    //}
+    if(listenerTable(key).isEmpty) {
+      keyMap.remove(key)
+    }
   }
 
 
@@ -172,7 +165,6 @@ class PubSubManager[T]  {
     dataTable(key).get(dataId).foreach { d =>
       val matchStatus = ReadyFor(dataId)
       val listenerIds = listenerTable(key).filter { case (_, w) => w.dataStatus == matchStatus }.map { case (listenerId, w) => listenerId }
-
       if(!listenerIds.isEmpty) {
         val dataReceived = DataReceived(dataId, d.payload)
         listenerIds.foreach { lId =>

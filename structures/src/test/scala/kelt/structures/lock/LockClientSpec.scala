@@ -19,11 +19,12 @@ class LockClientSpec extends FlatSpec with Matchers with ScalaFutures with HubSe
       implicit val system = ActorSystem(randomActorId)
       val client = new LockClient(s"http://${host}:${port}/lock")
       testCode(client, system)
+      system.shutdown()
     }
   }
 
   "LockClient" should "lock a resource" in withLockClient { (client, system) =>
-    val targetResource = "TEST"
+    val targetResource = "TEST-RESOURCE-1"
     val lockAcquire = client.lock(targetResource, 2.seconds, 2.seconds)
     whenReady(lockAcquire, 2.second) { resource =>
       resource should be (targetResource)
@@ -32,7 +33,7 @@ class LockClientSpec extends FlatSpec with Matchers with ScalaFutures with HubSe
 
   "LockClient" should "auto unlock after expiration" in withLockClient { (client, system) =>
     import system.dispatcher
-    val targetResource = "TEST"
+    val targetResource = "TEST-RESOURCE-2"
     val lockHoldDuration = 1.second
     val lockAcquire = client.lock(targetResource, 2.seconds, lockHoldDuration).flatMap { _ =>
       Thread.sleep(lockHoldDuration.toMillis + 100)
@@ -45,7 +46,7 @@ class LockClientSpec extends FlatSpec with Matchers with ScalaFutures with HubSe
 
   "LockClient" should "should timeout" in withLockClient { (client, system) =>
     import system.dispatcher
-    val targetResource = "TEST-RESOURCE"
+    val targetResource = "TEST-RESOURCE-3"
     val lockHoldDuration = 1.second
     val acquireTimeout = 1.second
     val lockAcquire = client.lock(targetResource, acquireTimeout, lockHoldDuration).flatMap { _ =>

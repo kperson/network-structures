@@ -13,7 +13,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 
-class LockManagerTest extends FlatSpec with Matchers with ScalaFutures {
+class LockManagerSpec extends FlatSpec with Matchers with ScalaFutures {
 
   val defaultHoldTimeout = 10.seconds
 

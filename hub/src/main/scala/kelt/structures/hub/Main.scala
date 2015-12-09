@@ -6,7 +6,6 @@ import akka.actor.{ActorSystem, Props}
 import akka.io.IO
 
 import kelt.structures.directory.file.FileDirectory
-import kelt.structures.storage.file.FileStorage
 
 import spray.can.Http
 

@@ -96,7 +96,10 @@ class PubSubPullActor(url: URL, pubSub: PubSub[Array[Byte]]) extends Actor {
 
 class PubSubClient(val channel: String, endpoint: String)(implicit system: ActorSystem) extends PubSub[Array[Byte]] {
 
-  val url = new URL(new URL(endpoint), s"/${channel}/")
+  val baseURL = new URL(if(endpoint.endsWith("/")) endpoint else endpoint + "/")
+
+  val url = new URL(baseURL, s"${channel}/")
+
   val push = system.actorOf(Props(new PubSubPushActor(url)))
   val pull = system.actorOf(Props(new PubSubPullActor(url, this)))
 

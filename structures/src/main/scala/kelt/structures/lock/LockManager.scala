@@ -19,20 +19,20 @@ sealed trait LockAction {
 
 }
 
-case class LockCheck(lockId: Option[Long], resource: String, acquire: Boolean)
+case class LockCheck private[lock] (lockId: Option[Long], resource: String, acquire: Boolean)
 
 
 sealed trait LockResponse
 
-case class LockGrant(resource: String) extends LockResponse
+case class LockGrant  (resource: String) extends LockResponse
 case class LockTimeout(timeout: FiniteDuration) extends LockResponse
 
 
-case class LockAcquire(resource: String, promise: Promise[LockResponse], id: Long, holdTimeOut: FiniteDuration) extends LockAction
-case class LockRelease(resource: String, id: Long) extends LockAction
+case class LockAcquire private[lock] (resource: String, promise: Promise[LockResponse], id: Long, holdTimeOut: FiniteDuration) extends LockAction
+case class LockRelease private[lock](resource: String, id: Long) extends LockAction
 
-case class LockAcquireRequest(resource: String, acquireTimeout: FiniteDuration, holdTimeOut: FiniteDuration)
-case class LockReleaseRequest(resource: String, auto: Boolean = false)
+case class LockAcquireRequest private[lock] (resource: String, acquireTimeout: FiniteDuration, holdTimeOut: FiniteDuration)
+case class LockReleaseRequest private[lock] (resource: String, auto: Boolean = false)
 
 
 class LockManager extends Actor {

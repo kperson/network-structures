@@ -8,6 +8,7 @@ import akka.actor.{Props, ActorSystem}
 import akka.io.IO
 import kelt.structures.directory.file.FileDirectory
 import kelt.structures.hub.HubServer
+import org.apache.commons.io.FileUtils
 import org.scalatest.FlatSpec
 import spray.can.Http
 
@@ -37,6 +38,9 @@ trait HubServerSpec extends FlatSpec {
       testCode("0.0.0.0", openPort)
     }
     finally {
+      if(directory.exists() && directory.isDirectory) {
+        FileUtils.deleteDirectory(directory)
+      }
       system.shutdown()
     }
 

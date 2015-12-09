@@ -3,7 +3,7 @@ package kelt.structures.pubsub
 import org.scalatest.{ Matchers, FlatSpec}
 
 
-class PubSubManagerTest extends FlatSpec with Matchers {
+class PubSubManagerSpec extends FlatSpec with Matchers {
 
   var manager: PubSubManager[String] = null
   val testKey = "myKey"

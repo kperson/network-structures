@@ -12,7 +12,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 
-class CountManagerTest extends FlatSpec with Matchers with ScalaFutures {
+class CountManagerSpec extends FlatSpec with Matchers with ScalaFutures {
 
   "CountManager" should "increment" in {
     implicit val system = ActorSystem("c1")
@@ -33,7 +33,7 @@ class CountManagerTest extends FlatSpec with Matchers with ScalaFutures {
     val resource = "r1"
     implicit val timeout = akka.util.Timeout(3.seconds)
     import system.dispatcher
-    val countTimeout = 500.milliseconds
+    val countTimeout = 200.milliseconds
     val manager = system.actorOf(Props(new CountManager))
     val inc = (manager ? UpdateCountRequest(resource, 20, countTimeout)).flatMap { case x =>
       Thread.sleep(countTimeout.toMillis + 100)

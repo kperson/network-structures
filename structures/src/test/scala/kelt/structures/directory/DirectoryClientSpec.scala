@@ -20,7 +20,7 @@ import scala.concurrent.duration._
 import scala.concurrent.Future
 
 
-class DirectoryClientTests extends FlatSpec with Matchers with ScalaFutures {
+class DirectoryClientSpec extends FlatSpec with Matchers with ScalaFutures {
 
   val endpoint = "http://www.example.com"
   implicit val actorSystem = ActorSystem("directory-client-tests")

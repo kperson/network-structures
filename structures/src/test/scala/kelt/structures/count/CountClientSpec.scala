@@ -11,7 +11,7 @@ import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 
-class CountClientTest extends FlatSpec with Matchers with ScalaFutures with HubServerSpec {
+class CountClientSpec extends FlatSpec with Matchers with ScalaFutures with HubServerSpec {
 
 
   "CountClient" should "increment count" in withServer { (host, port) =>

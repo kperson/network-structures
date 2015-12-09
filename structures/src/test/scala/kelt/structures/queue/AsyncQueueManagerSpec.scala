@@ -3,7 +3,7 @@ package kelt.structures.queue
 import org.scalatest.{Matchers, FlatSpec}
 
 
-class AsyncQueueManagerTest extends FlatSpec with Matchers {
+class AsyncQueueManagerSpec extends FlatSpec with Matchers {
 
   val topic = "hello"
   val message = "my message"
