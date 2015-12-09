@@ -12,6 +12,7 @@ import spray.can.Http
 import spray.can.Http.Connect
 import spray.http.HttpMethods._
 import spray.http.{MessageChunk, ChunkedRequestStart, HttpRequest}
+import scala.concurrent.{Promise, Future}
 import scala.concurrent.duration._
 
 
@@ -52,7 +53,7 @@ class AsyncQueueClientPushActor(url: URL) extends Actor {
 }
 
 case class QueueConnectRetry(delay: FiniteDuration)
-class AsyncQueueClientPullActor(url: URL, handler: Array[Byte] => Unit) extends Actor {
+class AsyncQueueClientPullActor(url: URL, promise: Promise[Array[Byte]]) extends Actor {
 
   import context.system
   import context.dispatcher
@@ -75,7 +76,7 @@ class AsyncQueueClientPullActor(url: URL, handler: Array[Byte] => Unit) extends 
       }
     case ex:MessageChunk =>
       sender ! Http.Close
-      handler(ex.data.toByteArray)
+      promise.success(ex.data.toByteArray)
       context.stop(self)
     case PeerClosed =>
       self ! QueueConnectRetry(5.seconds)
@@ -93,17 +94,21 @@ class AsyncQueueClientPullActor(url: URL, handler: Array[Byte] => Unit) extends 
 }
 
 
-class AsyncQueueClient(queue: String, queueURL: String)(implicit system: ActorSystem) extends AsyncQueue[Array[Byte]] {
+class AsyncQueueClient(queue: String, endpoint: String)(implicit system: ActorSystem) extends AsyncQueue[Array[Byte]] {
 
-  val url = new URL(new URL(queueURL), s"/${queue}/")
+  val baseURL = new URL(if(endpoint.endsWith("/")) endpoint else endpoint + "/")
+  val url = new URL(baseURL, s"${queue}/")
+
   val push = system.actorOf(Props(new AsyncQueueClientPushActor(url)))
 
   def enqueue(t: Array[Byte]) {
     push ! QueueSend(t)
   }
 
-  def dequeue(handler: Array[Byte] => Unit) {
-    system.actorOf(Props(new AsyncQueueClientPullActor(url, handler)))
+  def dequeue() : Future[Array[Byte]] = {
+    val p = Promise[Array[Byte]]()
+    system.actorOf(Props(new AsyncQueueClientPullActor(url, p)))
+    p.future
   }
 
   def close() {
