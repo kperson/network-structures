@@ -23,13 +23,15 @@ trait HubServerSpec extends FlatSpec {
   def withServer(testCode: (String, Int) => Any) {
 
 
-    val directory = File.createTempFile("dir", "")
+    val directory = File.createTempFile("temp", System.nanoTime().toString)
+    directory.delete()
+    directory.mkdirs()
     implicit val system = ActorSystem(randomActorId)
     import system.dispatcher
 
     val handler = system.actorOf(Props(
       new HubServer(
-        new FileDirectory("root", directory)
+        new FileDirectory(directory)
       )).withDispatcher("akka.pubsub-dispatcher"))
 
     //get available port

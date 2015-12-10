@@ -4,8 +4,6 @@ import java.io.{OutputStream, InputStream}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-import udata.http._
-
 
 case class DirectoryListing(files: List[String], directories: List[String]) {
   def isEmpty = files.isEmpty && directories.isEmpty
@@ -15,54 +13,33 @@ trait Directory {
 
   implicit def ec: ExecutionContext
 
-  def name: String
-
   /**
    *
    * @return
    */
-  def directories: Future[List[Directory]]
+  def directories(path: List[String]) : Future[List[String]]
 
-  def files: Future[List[String]]
+  def files(path: List[String]) : Future[List[String]]
 
-  def fileContents(path: List[String]): Future[Option[InputStream]]
+  def fileContents(path: List[String]): Future[Option[() => InputStream]]
 
-  def addFile(fileName: String): OutputStream
+  def addFile(fileName: List[String]): OutputStream
 
-  def deleteFile(path: List[String]): Future[Unit]
+  def delete(path: List[String]): Future[Unit]
 
-  def deleteDirectory(path: List[String]): Future[Unit]
-
-  def makeDirectory(path: List[String]): Future[Directory]
-
-  def directory(path: List[String]): Future[Option[Directory]] = {
-    path match {
-      case h :: t =>
-        directories.map { q =>
-          q.find(x => x.name == h)
-
-        }.flatMap {
-          case Some(d) => d.directory(t)
-          case _ => Future.successful(None)
-        }
-      case _ =>
-        Future.successful(Some(this))
-    }
-  }
-
-  def directoryListing: Future[DirectoryListing] = {
+  def directoryListing(path: List[String]): Future[DirectoryListing] = {
     for {
-      dirs <- directories
-      files <- files
-    } yield DirectoryListing(files.sortWith{ (a, b) => a < b }, dirs.map(_.name).sortWith { (a, b) => a < b })
+      dirs <- directories(path)
+      files <- files(path)
+    } yield DirectoryListing(files.sortWith{ (a, b) => a < b }, dirs.sortWith { (a, b) => a < b })
   }
 
 
 }
 
 sealed trait DirectoryEntry
-case class FileItem(item: InputStream) extends DirectoryEntry
-case class ChildDirectory(item: Directory) extends DirectoryEntry
+case class FileItem(streamFetch: () =>  InputStream) extends DirectoryEntry
+case class ChildDirectory(item: DirectoryListing) extends DirectoryEntry
 
 
 trait RichDirectory {
@@ -72,28 +49,20 @@ trait RichDirectory {
     import self.ec
 
     def addFile(fileName: String, bytes: Array[Byte]) {
-      val stream = self.addFile(fileName)
+      val stream = self.addFile(fileName.split("/").filter(_ != "").toList)
       stream.write(bytes)
       stream.close()
     }
 
-    def directory(path: String): Future[Option[Directory]] = {
-      self.directory(path.split("/").filter(_ != "").toList)
-    }
-
-    def makeDirectory(path: String): Future[Directory] = {
-      self.makeDirectory(path.split("/").filter(_ != "").toList)
-    }
-
-    def fileContents(path: String): Future[Option[InputStream]] = {
+    def fileContents(path: String): Future[Option[() => InputStream]] = {
       self.fileContents(path.split("/").filter(_ != "").toList)
     }
 
     def item(path: List[String]) : Future[Option[DirectoryEntry]] = {
-     self.directory(path).flatMap {
-       case Some(dir) => Future.successful(Some(ChildDirectory(dir)))
-       case _ => self.fileContents(path).flatMap {
-         case Some(f) => Future.successful(Some(FileItem(f)))
+      self.fileContents(path).flatMap {
+       case Some(is) => Future.successful(Some(FileItem(is)))
+       case _ => self.directoryListing(path).flatMap {
+         case l if !l.directories.isEmpty || !l.files.isEmpty => Future.successful(Some(ChildDirectory(l)))
          case _ => Future.successful(None)
        }
      }
@@ -103,12 +72,8 @@ trait RichDirectory {
       self.item(path.split("/").filter(_ != "").toList)
     }
 
-    def deleteFile(path: String): Future[Unit] = {
-      self.deleteFile(path.split("/").filter(_ != "").toList)
-    }
-
-    def deleteDirectory(path: String): Future[Unit] = {
-      self.deleteDirectory(path.split("/").filter(_ != "").toList)
+    def delete(path: String): Future[Unit] = {
+      self.delete(path.split("/").filter(_ != "").toList)
     }
 
   }

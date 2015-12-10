@@ -1,78 +1,104 @@
 package udata.directory
 
-import java.net.URL
-
 import akka.actor.ActorSystem
-import akka.util.{Timeout => AkkaTimeout}
 
-import com.codahale.jerkson.Json._
-import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream
-
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{Matchers, FlatSpec}
-
-import spray.http.HttpHeaders.RawHeader
-import spray.http._
+import udata.http.ResourceNotFoundException
 
 import scala.concurrent.duration._
-import scala.concurrent.Future
+
+import udata.HubServerSpec
+import udata.util._
+import udata.util.TestUtils._
 
 
-class DirectoryClientSpec extends FlatSpec with Matchers with ScalaFutures {
+class DirectoryClientSpec extends FlatSpec with Matchers with ScalaFutures with HubServerSpec {
 
-  val endpoint = "http://www.example.com"
-  implicit val actorSystem = ActorSystem("directory-client-tests")
 
-  "Directory Client" should "fetch a directory contents" in {
-
-    implicit val timeout = AkkaTimeout(2.seconds)
-
-    val listing = DirectoryListing(List("f1.txt", "f2.txt"), List("dir1", "dir2"))
-    val c = new DirectoryClient(endpoint) {
-      override def request(req: HttpRequest)(implicit system: ActorSystem) : Future[HttpResponse] = {
-        Future.successful(HttpResponse(StatusCodes.OK, HttpEntity(ContentTypes.`application/json`, generate(listing)), headers = List(RawHeader("X-Type", "Directory"))))
+  def withDirectoryClient(testCode: (DirectoryClient, ActorSystem) => Any): Unit = {
+    withServer { (host, port) =>
+      implicit val system = ActorSystem(randomActorId)
+      val client = new DirectoryClient(s"http://${host}:${port}/dir")
+      try {
+        testCode(client, system)
       }
-    }
-
-    whenReady(c.fetch("/hello"), Timeout(Span(2, Seconds))) { x =>
-      x should be (DirectoryContent(listing))
+      finally {
+        system.shutdown()
+      }
     }
   }
 
-  "Directory Client" should "fetch a file" in {
-
-    implicit val timeout = AkkaTimeout(2.seconds)
-    import actorSystem.dispatcher
-
-    val str = "hello world"
-    val c = new DirectoryClient(endpoint) {
-      override def request(req: HttpRequest)(implicit system: ActorSystem) : Future[HttpResponse] = {
-        Future.successful(HttpResponse(StatusCodes.OK, HttpEntity(ContentTypes.`text/plain(UTF-8)`, str), headers = List(RawHeader("X-Type", "File"))))
-      }
-    }
-
-    val fileContents = c.fetch("/hello").map(_.asInstanceOf[FileContent])
-
-    whenReady(fileContents, Timeout(Span(2, Seconds))) { x =>
-      val b = new StringBuilder()
-      val stream = x.stream
-      stream.foreach(r => b.append(new String(r)))
-      b.toString should be (str)
-    }
-  }
-
-  "Directory Client" should "write to an outputstream" in {
-    implicit val timeout = AkkaTimeout(2.seconds)
-    val contents = "hello world"
-    val out = new ByteOutputStream()
-    val c = new DirectoryClient(endpoint) {
-      override def outStreamForURL(url: URL) = out
-    }
-    val stream = c.addFile("/hello")
+  "DirectoryClient" should "add a file" in withDirectoryClient { (client, system) =>
+    val contents = "FILE-CONTENTS"
+    val filePath = "/parent/hello.txt"
+    val stream = client.addFile(filePath)
     stream.write(contents.getBytes)
-    val written = out.toString
-    written should be (contents)
+    stream.close()
+
+    Thread.sleep(700.milliseconds.toMillis)
+    val fetch = client.fetch(filePath)
+    whenReady(fetch, 2.seconds) { con =>
+      con shouldBe a [FileContent]
+      val fetchedContents = con.asInstanceOf[FileContent]
+      val fileContents = new String(fetchedContents.inputStream.stream(4096).flatten.toArray)
+      fileContents should be (contents)
+    }
   }
+
+
+  "Directory Client" should "fetch directory contents" in withDirectoryClient { (client, system) =>
+    val contents = "FILE-CONTENTS"
+    val filePath = "/parent/hello.txt"
+    val stream = client.addFile(filePath)
+    stream.write(contents.getBytes)
+    stream.close()
+
+    val filePath2 = "/parent/p1/hello2.txt"
+    val stream2 = client.addFile(filePath2)
+    stream2.write(contents.getBytes)
+    stream2.close()
+
+    Thread.sleep(700.milliseconds.toMillis)
+    val fetch = client.fetch("/parent")
+    whenReady(fetch, 2.seconds) { con =>
+      con should be (DirectoryContent((DirectoryListing(List("hello.txt"), List("p1")))))
+    }
+  }
+
+
+  "Directory Client" should "should fail if no file is found" in withDirectoryClient { (client, system) =>
+    val filePath = "/parent/hello.txt"
+    val fetch = client.fetch(filePath)
+    whenReady(fetch.failed, 3.seconds) { con =>
+      con shouldBe a [ResourceNotFoundException]
+    }
+  }
+
+  "Directory Client" should "should fail if no directory is found" in withDirectoryClient { (client, system) =>
+    val filePath = "/parent"
+    val fetch = client.fetch(filePath)
+    whenReady(fetch.failed, 3.seconds) { con =>
+      con shouldBe a [ResourceNotFoundException]
+    }
+  }
+
+  "Directory Client" should "delete a file" in withDirectoryClient { (client, system) =>
+    import system.dispatcher
+    val contents = "FILE-CONTENTS"
+    val filePath = "/parent/hello.txt"
+    val stream = client.addFile(filePath)
+    stream.write(contents.getBytes)
+    stream.close()
+
+    Thread.sleep(600.milliseconds.toMillis)
+    val fetch = client.delete(filePath).flatMap { _ =>
+      Thread.sleep(300.milliseconds.toMillis)
+      client.fetch(filePath)
+    }
+    whenReady(fetch.failed, 2.seconds) { con =>
+      con shouldBe a [ResourceNotFoundException]
+    }
+  }
+
 }

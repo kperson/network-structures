@@ -11,13 +11,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class FileDirectorySpec extends DirectorySpec with BeforeAndAfter {
 
-  val rootName = "root"
   val f = new File(System.getProperty("java.io.tmpdir"), "directorytest")
 
   if(f.exists()) {
     FileUtils.deleteDirectory(f)
   }
 
-  lazy val directory = new FileDirectory(rootName, f)
+  lazy val directory = new FileDirectory(f)
 
 }

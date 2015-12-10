@@ -14,8 +14,9 @@ import spray.http._
 import udata.http._
 import udata.util._
 
+
 sealed trait PathContents
-case class FileContent(stream: Stream[Array[Byte]]) extends PathContents
+case class FileContent(inputStream: InputStream) extends PathContents
 case class DirectoryContent(listing: DirectoryListing) extends PathContents
 
 
@@ -36,7 +37,7 @@ class DirectoryClient(endpoint: String)(implicit system: ActorSystem) extends Sp
    * @return an outstream to store data
    */
   def addFile(path: String) : OutputStream = {
-    val url = new URL(baseURL, path)
+    val url = new URL(baseURL, cleanPath(path))
     outStreamForURL(url)
   }
 
@@ -57,11 +58,16 @@ class DirectoryClient(endpoint: String)(implicit system: ActorSystem) extends Sp
    */
   def fetch(path: String) : Future[PathContents] = {
     val url = new URL(baseURL, cleanPath(path))
-    request(HttpRequest(HttpMethods.GET, url.toSprayUri)).map {
+    val inputStream = new HTTPDownloadInputStream(url)
+    val res = inputStream.future.map {
       case r@HttpResponse(status, _, _, _) if r.headers.find(_.name == "X-Type").map(_.value) == Some("File") =>
-        FileContent(r.entity.data.toChunkStream(4096).map(_.toByteArray))
+        FileContent(inputStream)
       case r@HttpResponse(status, _, _, _) =>
-        DirectoryContent(parse[DirectoryListing](r.entity.data.asString))
+        DirectoryContent(parse[DirectoryListing](inputStream))
+    }
+
+    res.recoverWith {
+      case FailedHttpResponse(r) if r.status.intValue == 404 => Future.failed(ResourceNotFoundException())
     }
   }
 
@@ -74,7 +80,7 @@ class DirectoryClient(endpoint: String)(implicit system: ActorSystem) extends Sp
     }
   }
 
-  protected def outStreamForURL(url: URL) : OutputStream = {
+  private def outStreamForURL(url: URL) : OutputStream = {
     new HTTPUploadOutputStream(url, HttpMethods.POST)
   }
 

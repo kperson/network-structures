@@ -12,7 +12,6 @@ import spray.can.Http.RegisterChunkHandler
 import spray.http.HttpHeaders.RawHeader
 import spray.http._
 
-import scala.concurrent.Future
 import scala.io.Source
 
 import udata.server._
@@ -31,12 +30,10 @@ trait DirectoryServer extends BasicSprayServer {
       x match {
         case Some(FileItem(is)) =>
           val contentType = StaticResolver.resolveContentType(path.last)
-          context.actorOf(Props(new Streamer(client, is, contentType)))
-        case Some(ChildDirectory(dir)) =>
-          dir.directoryListing onSuccess { case listing =>
+          context.actorOf(Props(new Streamer(client, is(), contentType)))
+        case Some(ChildDirectory(listing)) =>
             val entity = HttpEntity(ContentTypes.`application/json`, generate(listing))
             client ! HttpResponse(status = 200, entity = entity, headers = List(RawHeader("X-Type", "Directory")))
-          }
         case _=> send404(client)
       }
     }
@@ -45,38 +42,35 @@ trait DirectoryServer extends BasicSprayServer {
   post("/dir/*/?") { (params, client, body) =>
     val path = params.splatList
     val s = sender
-
     if(path.isEmpty) {
       client ! HttpResponse(400)
     }
-    directory.directory(path).onSuccess {
-      case Some(_) =>
-        val pathName = path.mkString("/")
-        client ! HttpResponse(400, entity = s"${pathName} is directory not a file, delete ${pathName} first if you desire to make ${pathName} no longer a directory")
+    val directoryCheck = directory.item(path)
+    val resourcePath = path.mkString("/")
+    directoryCheck.onSuccess {
+      case Some(ChildDirectory(listing)) =>
+        client ! HttpResponse(400, entity = s"${resourcePath} is directory not a file, delete ${resourcePath} first if you desire to make ${resourcePath} no longer a directory")
       case _ => {
-        val uploadDir = path.length match {
-          case 1 => Future.successful(directory)
-          case _ => directory.makeDirectory(path.take(path.length - 1))
-        }
-        val uploadHandler = uploadDir.map { x =>
-          x.addFile(path.last)
-        }
-        uploadHandler.onSuccess { case f =>
-          body match {
-            case SingleRequestBody(req) =>
-              val parts = req.asPartStream()
-              val handler = context.actorOf(Props(new ServerToSourceUploader(s, parts.head.asInstanceOf[ChunkedRequestStart], f)))
-              parts.tail.foreach(x => handler ! x)
+        val out = directory.addFile(path)
+        body match {
+          case SingleRequestBody(req) =>
+            val parts = req.asPartStream()
+            val handler = context.actorOf(Props(new ServerToSourceUploader(client, parts.head.asInstanceOf[ChunkedRequestStart], out)))
+            parts.tail.foreach(x => handler ! x)
 
-            case ChunkedRequestBody(start) =>
-              val handler = context.actorOf(Props(new ServerToSourceUploader(s, start, f)))
-              sender ! RegisterChunkHandler(handler)
+          case ChunkedRequestBody(start) =>
+            val handler = context.actorOf(Props(new ServerToSourceUploader(client, start, out)))
+            s ! RegisterChunkHandler(handler)
 
-            case _ => send404(client)
-          }
+          case _ => send404(client)
         }
       }
     }
+
+    directoryCheck.onFailure { case f =>
+      client ! HttpResponse(500)
+    }
+
   }
 
   delete("/dir/*/?") { (params, client, _) =>
@@ -85,13 +79,7 @@ trait DirectoryServer extends BasicSprayServer {
       client ! HttpResponse(400)
     }
     else {
-      directory.item(path).flatMap {
-        case Some(FileItem(is)) => directory.deleteFile(path).map { _ => HttpResponse(204) }
-        case Some(ChildDirectory(dir)) => directory.deleteDirectory(path).map { _ => HttpResponse(204) }
-        case _=> Future.successful(HttpResponse(404))
-      }.onSuccess {
-        case r => client ! r
-      }
+      directory.delete(path).onSuccess { case _ => client ! HttpResponse(204) }
     }
   }
 

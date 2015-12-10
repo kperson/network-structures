@@ -36,8 +36,10 @@ class AsyncUploader(url: URL, method: HttpMethod = HttpMethods.POST, headers: Li
       server.foreach { ref =>
         if (!buffer.isEmpty) {
           buffer.dequeue() match {
-            case SaveBytes(bytes) => ref ! MessageChunk(bytes).withAck(SendTrigger)
-            case CloseStorage => ref ! ChunkedMessageEnd()
+            case SaveBytes(bytes) =>
+              ref ! MessageChunk(bytes).withAck(SendTrigger)
+            case CloseStorage =>
+              ref ! ChunkedMessageEnd()
           }
         }
       }

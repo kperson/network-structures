@@ -1,16 +1,15 @@
 package udata.pubsub
 
 import akka.actor.ActorSystem
-import udata.HubServerSpec
-
-import udata.structures.HubServerSpec
-import udata.structures.util.TestUtils._
 
 import org.scalatest.{FlatSpec, Matchers}
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Promise
 import scala.concurrent.duration._
+
+import udata.HubServerSpec
+import udata.util.TestUtils._
 
 
 class PubSubClientSpec extends FlatSpec with Matchers with ScalaFutures with HubServerSpec {
@@ -19,8 +18,12 @@ class PubSubClientSpec extends FlatSpec with Matchers with ScalaFutures with Hub
     withServer { (host, port) =>
       implicit val system = ActorSystem(randomActorId)
       val client = new PubSubClient(channel, s"http://${host}:${port}/pubsub")
-      testCode(client, system)
-      system.shutdown()
+      try {
+        testCode(client, system)
+      }
+      finally {
+        system.shutdown()
+      }
     }
   }
 

@@ -1,17 +1,15 @@
 package udata.lock
 
 import akka.actor.ActorSystem
-import udata.HubServerSpec
-import udata.http.TimeoutException
-
-import udata.structures.HubServerSpec
-import udata.structures.http.TimeoutException
-import udata.structures.util.TestUtils._
 
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{Matchers, FlatSpec}
 
 import scala.concurrent.duration._
+
+import udata.HubServerSpec
+import udata.http.TimeoutException
+import udata.util.TestUtils._
 
 
 class LockClientSpec extends FlatSpec with Matchers with ScalaFutures with HubServerSpec {
@@ -20,8 +18,12 @@ class LockClientSpec extends FlatSpec with Matchers with ScalaFutures with HubSe
     withServer { (host, port) =>
       implicit val system = ActorSystem(randomActorId)
       val client = new LockClient(s"http://${host}:${port}/lock")
-      testCode(client, system)
-      system.shutdown()
+      try {
+        testCode(client, system)
+      }
+      finally {
+        system.shutdown()
+      }
     }
   }
 

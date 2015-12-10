@@ -7,7 +7,7 @@ import udata.queue.AsyncQueueClient
 
 package object udata {
 
-  class Clients(endpoint: String, actorSystem: Option[ActorSystem] = None) {
+  class Clients private[udata] (endpoint: String, actorSystem: Option[ActorSystem] = None) {
 
     val baseEndpoint = if(endpoint.endsWith("/")) endpoint else endpoint + "/"
     implicit lazy val system = actorSystem.getOrElse(ActorSystem("data-structures"))
