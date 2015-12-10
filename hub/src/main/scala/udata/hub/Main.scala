@@ -40,7 +40,7 @@ object Main extends App  {
 
       val handler = system.actorOf(Props(
         new HubServer(
-          new FileDirectory("root", new File(config.directoryPath))
+          new FileDirectory(new File(config.directoryPath))
         )).withDispatcher("akka.pubsub-dispatcher"))
       IO(Http) ! Http.Bind(handler, interface = config.host, port = config.port)
     case _ => println("--help for details")
