@@ -7,6 +7,7 @@ EXPOSE 8080
 WORKDIR /
 ADD . /code
 WORKDIR /code
+RUN ./build-sbt-repo.sh
 RUN sbt 'project hub' clean compile stage
 RUN mkdir /structure-data
 VOLUME /structure-data

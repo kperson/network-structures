@@ -3,7 +3,7 @@ import spray.revolver.RevolverPlugin.Revolver
 resolvers += Resolver.sonatypeRepo("public")
 
 lazy val commonSettings = Seq(
-  organization := "com.kelt.structures",
+  organization := "udata",
   version := "0.1.0-SNAPSHOT",
   scalaVersion := "2.11.7",
   parallelExecution in Test := false,

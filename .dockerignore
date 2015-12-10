@@ -2,3 +2,4 @@ Dockerfile
 artifactory.tar
 artifactory-base.tar
 .git
+.vagrant
