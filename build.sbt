@@ -2,12 +2,20 @@ import spray.revolver.RevolverPlugin.Revolver
 
 resolvers += Resolver.sonatypeRepo("public")
 
+@inline def env(n: String): Option[String] = sys.env.get(n)
+
 lazy val commonSettings = Seq(
-  organization := "udata",
+  organization := "com.kperson",
   version := "0.1.0-SNAPSHOT",
   scalaVersion := "2.11.7",
   parallelExecution in Test := false,
-  scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
+  scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
+  publishTo := {
+    if (isSnapshot.value)
+      Some(Resolver.file("file", new File(env("FILE_PUBLISH").getOrElse(Path.userHome.getAbsolutePath + "/Dropbox/Public/ivy/") + "snapshot")))
+    else
+      Some(Resolver.file("file", new File(env("FILE_PUBLISH").getOrElse(Path.userHome.getAbsolutePath + "/Dropbox/Public/ivy/") + "release")))
+  }
 )
 
 
