@@ -20,14 +20,19 @@ case class CountEntry private[count] (amount: Int, cancellable: Cancellable) {
 
 }
 
-case class ResourceCountRequest private[count] (resourceKey: String)
-case class ResourceCountResponse private[count] (count: Int)
 case class AutoDecrementRequest private[count] (resourceKey: String, replaceKey: String)
-case class UpdateCountRequest private[count] (resourceKey: String, count: Int, ttl: FiniteDuration, replaceKey: Option[String] = None)
-case class UpdateResponse private[count] (resourceKey: String, replaceKey: String, count: Int)
 
+object CountManager {
+  case class UpdateCountRequest(resourceKey: String, count: Int, ttl: FiniteDuration, replaceKey: Option[String] = None)
+  case class UpdateResponse(resourceKey: String, replaceKey: String, count: Int)
 
-class CountManager private[count] extends Actor {
+  case class ResourceCountRequest(resourceKey: String)
+  case class ResourceCountResponse(count: Int)
+}
+
+class LocalCountManager extends Actor {
+
+  import CountManager._
 
   def receive = {
     case UpdateCountRequest(resourceKey, amount, ttl, replaceKey) => sender ! update(resourceKey, amount, ttl, replaceKey)

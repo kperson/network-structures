@@ -10,7 +10,9 @@ import spray.http.{ContentTypes, HttpEntity, HttpResponse}
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
+import udata.count.CountManager._
 import udata.server._
+
 
 trait CountServer extends BasicSprayServer {
 

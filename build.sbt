@@ -6,15 +6,15 @@ resolvers += Resolver.sonatypeRepo("public")
 
 lazy val commonSettings = Seq(
   organization := "com.kperson",
-  version := "0.1.0-SNAPSHOT",
+  version := "0.0.2-SNAPSHOT",
   scalaVersion := "2.11.7",
   parallelExecution in Test := false,
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
   publishTo := {
     if (isSnapshot.value)
-      Some(Resolver.file("file", new File(env("FILE_PUBLISH").getOrElse(Path.userHome.getAbsolutePath + "/Dropbox/Public/ivy/") + "snapshot")))
+      Some(Resolver.file("file", new File(env("FILE_PUBLISH").getOrElse(Path.userHome.getAbsolutePath + "/Dropbox/Public/maven/") + "snapshot")))
     else
-      Some(Resolver.file("file", new File(env("FILE_PUBLISH").getOrElse(Path.userHome.getAbsolutePath + "/Dropbox/Public/ivy/") + "release")))
+      Some(Resolver.file("file", new File(env("FILE_PUBLISH").getOrElse(Path.userHome.getAbsolutePath + "/Dropbox/Public/maven/") + "release")))
   }
 )
 

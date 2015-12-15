@@ -1,10 +1,14 @@
 package udata.util
 
-import java.io.InputStream
+import java.io.{OutputStream, InputStream}
 
 trait RichStream {
 
   implicit class InputStreamExtension(self: InputStream) {
+
+    def pipeToOutputStream(outputStream: OutputStream) = {
+      self.stream(2048).foreach(outputStream.write(_))
+    }
 
     def stream(bufferSize: Int) : Stream[Array[Byte]] = {
       var buffer = new Array[Byte](bufferSize)

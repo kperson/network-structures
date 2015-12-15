@@ -1,29 +1,32 @@
 package udata.count
 
-import akka.actor.{Props, ActorSystem}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
 
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{Matchers, FlatSpec}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
+import udata.count.CountManager._
+import udata.util.TestUtils._
 
-class CountManagerSpec extends FlatSpec with Matchers with ScalaFutures {
+
+trait CountManagerSpec extends FlatSpec with Matchers with ScalaFutures {
+
+  def countManager(system: ActorSystem): ActorRef
 
   "CountManager" should "increment" in {
     implicit val system = ActorSystem("c1")
     val resource = "r1"
     implicit val timeout = akka.util.Timeout(3.seconds)
     import system.dispatcher
-    val manager = system.actorOf(Props(new CountManager))
+    val manager = countManager(system)
     val inc = (manager ? UpdateCountRequest(resource, 20, 1.minute)).flatMap { case x =>
       manager ? ResourceCountRequest(resource)
     }.asInstanceOf[Future[ResourceCountResponse]]
-    whenReady(inc, Timeout(Span(3, Seconds))) { a =>
+    whenReady(inc, 3.seconds) { a =>
       a.count should be (20)
     }
   }
@@ -34,12 +37,13 @@ class CountManagerSpec extends FlatSpec with Matchers with ScalaFutures {
     implicit val timeout = akka.util.Timeout(3.seconds)
     import system.dispatcher
     val countTimeout = 200.milliseconds
-    val manager = system.actorOf(Props(new CountManager))
+    val manager = countManager(system)
     val inc = (manager ? UpdateCountRequest(resource, 20, countTimeout)).flatMap { case x =>
       Thread.sleep(countTimeout.toMillis + 100)
       manager ? ResourceCountRequest(resource)
     }.asInstanceOf[Future[ResourceCountResponse]]
-    whenReady(inc, Timeout(Span(3, Seconds))) { a =>
+
+    whenReady(inc, 3.seconds) { a =>
       a.count should be (0)
     }
   }
@@ -50,14 +54,15 @@ class CountManagerSpec extends FlatSpec with Matchers with ScalaFutures {
     implicit val timeout = akka.util.Timeout(3.seconds)
     import system.dispatcher
     val countTimeout = 10.seconds
-    val manager = system.actorOf(Props(new CountManager))
+    val manager = countManager(system)
     val inc = (manager ? UpdateCountRequest(resource, 20, countTimeout)).flatMap {
       case UpdateResponse(_, rKey, _) => manager ? UpdateCountRequest(resource, 30, countTimeout, Some(rKey))
-      case x => Future.failed(new Exception(s"received ${x} excepted UpdateResponse"))
+      case x => Future.failed(new RuntimeException(s"received ${x} excepted UpdateResponse"))
     }.flatMap { case _ =>
       manager ? ResourceCountRequest(resource)
     }.asInstanceOf[Future[ResourceCountResponse]]
-    whenReady(inc, Timeout(Span(3, Seconds))) { a =>
+
+    whenReady(inc, 3.seconds) { a =>
       a.count should be (30)
     }
   }
@@ -68,14 +73,14 @@ class CountManagerSpec extends FlatSpec with Matchers with ScalaFutures {
     implicit val timeout = akka.util.Timeout(3.seconds)
     import system.dispatcher
     val countTimeout = 10.seconds
-    val manager = system.actorOf(Props(new CountManager))
+    val manager = countManager(system)
     val inc = (manager ? UpdateCountRequest(resource, 20, countTimeout)).flatMap {
       case UpdateResponse(_, rKey, _) => manager ? UpdateCountRequest(resource, 30, countTimeout)
       case x => Future.failed(new Exception(s"received ${x} excepted UpdateResponse"))
     }.flatMap { case _ =>
       manager ? ResourceCountRequest(resource)
     }.asInstanceOf[Future[ResourceCountResponse]]
-    whenReady(inc, Timeout(Span(3, Seconds))) { a =>
+    whenReady(inc, 3.seconds) { a =>
       a.count should be (50)
     }
   }

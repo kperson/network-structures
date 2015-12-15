@@ -71,6 +71,26 @@ class DirectoryClient(endpoint: String)(implicit system: ActorSystem) extends Sp
     }
   }
 
+  def fetchDirectory(path: String) : Future[DirectoryListing] = {
+    fetch(path).flatMap {
+      case x:DirectoryListing => Future.successful(x)
+      case _ => Future.failed(ResourceNotFoundException())
+    }
+  }
+
+  def fetchFile(path: String) : Future[FileContent] = {
+    fetch(path).flatMap {
+      case x:FileContent => Future.successful(x)
+      case _ => Future.failed(ResourceNotFoundException())
+    }
+  }
+
+  def delete(path: List[String]) : Future[Unit] = delete(path.mkString("/"))
+  def addFile(path: List[String]) : OutputStream = addFile(path.mkString("/"))
+  def fetch(path: List[String]) : Future[PathContents] = fetch(path.mkString("/"))
+  def fetchFile(path: List[String]) : Future[FileContent] = fetchFile(path.mkString("/"))
+  def fetchDirectory(path: List[String]) : Future[DirectoryListing] = fetchDirectory(path.mkString("/"))
+
   private def cleanPath(path: String) = {
     if(path.startsWith("/")) {
       path.substring(1, path.length)

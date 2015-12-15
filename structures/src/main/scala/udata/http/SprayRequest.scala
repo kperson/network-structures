@@ -24,8 +24,6 @@ trait SprayRequest {
     (IO(Http) ? req).mapTo[HttpResponse].flatMap {
       case r @ HttpResponse(status, _, _, _) if status.intValue < 400 =>
         Future.successful(r)
-      case r @ HttpResponse(status, _, _, _) if status.intValue == 404 =>
-        Future.failed(ResourceNotFoundException())
       case r @ HttpResponse(_, _, _, _)   =>
         Future.failed(FailedHttpResponse(r))
       case _ => Future.failed(UnknownException())

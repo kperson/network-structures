@@ -8,6 +8,7 @@ import akka.io.IO
 import spray.can.Http
 
 import udata.directory.file.FileDirectory
+import udata.HubServerConfig
 
 
 case class ServerArguments(host: String = "0.0.0.0", port: Int = 8080, directoryPath: String = "/tmp/structure-path/directory")
@@ -38,9 +39,11 @@ object Main extends App  {
       implicit val system = ActorSystem("hub-server")
       import system.dispatcher
 
+      val serverConfig = new HubServerConfig()
       val handler = system.actorOf(Props(
         new HubServer(
-          new FileDirectory(new File(config.directoryPath))
+          new FileDirectory(new File(config.directoryPath)),
+          serverConfig
         )).withDispatcher("akka.pubsub-dispatcher"))
       IO(Http) ! Http.Bind(handler, interface = config.host, port = config.port)
     case _ => println("--help for details")

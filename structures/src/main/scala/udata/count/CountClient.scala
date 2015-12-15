@@ -11,6 +11,7 @@ import spray.http.{HttpMethods, HttpRequest}
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
+import udata.count.CountManager._
 import udata.http._
 import udata.util._
 

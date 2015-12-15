@@ -7,10 +7,11 @@ import udata.queue.AsyncQueueClient
 
 package object udata {
 
-  class Clients private[udata] (endpoint: String, actorSystem: Option[ActorSystem] = None) {
+  class UDataClients (endpoint: String, actorSystem: Option[ActorSystem] = None) {
+
+    implicit lazy val system = actorSystem.getOrElse(UDataClients.system)
 
     val baseEndpoint = if(endpoint.endsWith("/")) endpoint else endpoint + "/"
-    implicit lazy val system = actorSystem.getOrElse(ActorSystem("data-structures"))
 
     def directoryClient() = new DirectoryClient(baseEndpoint + "dir")
 
@@ -22,12 +23,14 @@ package object udata {
 
   }
 
-  object Clients {
+  object UDataClients {
 
-    def apply(endpoint: String) = new Clients(endpoint, None)
+    def apply(endpoint: String) = new UDataClients(endpoint, None)
 
 
-    def apply(endpoint: String, actorSystem: ActorSystem) = new Clients(endpoint, Some(actorSystem))
+    def apply(endpoint: String, actorSystem: ActorSystem) = new UDataClients(endpoint, Some(actorSystem))
+
+    implicit lazy val system = ActorSystem("data-structures")
 
   }
 

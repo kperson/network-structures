@@ -31,7 +31,8 @@ trait HubServerSpec extends FlatSpec {
 
     val handler = system.actorOf(Props(
       new HubServer(
-        new FileDirectory(directory)
+        new FileDirectory(directory),
+        new HubServerConfig()
       )).withDispatcher("akka.pubsub-dispatcher"))
 
     //get available port

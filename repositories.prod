@@ -5,4 +5,4 @@
 
   maven-releases: https://repo1.maven.org/maven2/
   typesafe-maven: https://dl.bintray.com/typesafe/maven-releases/
-  sonatype-mave: https://oss.sonatype.org/content/repositories/releases/
+  sonatype-maven: https://oss.sonatype.org/content/repositories/releases/
