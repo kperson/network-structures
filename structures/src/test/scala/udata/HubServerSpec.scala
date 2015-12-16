@@ -12,7 +12,7 @@ import org.scalatest.FlatSpec
 
 import spray.can.Http
 
-import udata.directory.file.FileDirectory
+import udata.directory.system.FileSystemDirectory
 import udata.hub.HubServer
 
 
@@ -31,7 +31,7 @@ trait HubServerSpec extends FlatSpec {
 
     val handler = system.actorOf(Props(
       new HubServer(
-        new FileDirectory(directory),
+        new FileSystemDirectory(directory),
         new HubServerConfig()
       )).withDispatcher("akka.pubsub-dispatcher"))
 

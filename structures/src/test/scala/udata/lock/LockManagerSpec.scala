@@ -1,6 +1,6 @@
 package udata.lock
 
-import akka.actor.{Props, ActorSystem}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
 
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -12,17 +12,22 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 import udata.http.TimeoutException
+import udata.lock.LockManager._
 
-class LockManagerSpec extends FlatSpec with Matchers with ScalaFutures {
+
+trait LockManagerSpec extends FlatSpec with Matchers with ScalaFutures {
 
   val defaultHoldTimeout = 10.seconds
+
+  def lockManager(system: ActorSystem): ActorRef
+
 
   "LockManager" should "acquire a lock" in {
 
     implicit val system = ActorSystem("l1")
     implicit val timeout = akka.util.Timeout(2.seconds)
     val resource = "r1"
-    val manager = system.actorOf(Props(new LockManager))
+    val manager = lockManager(system)
     val lockAcquisition = (manager ? LockAcquireRequest(resource, 2.seconds, defaultHoldTimeout))
     whenReady(lockAcquisition, Timeout(Span(2, Seconds))) { x =>
       x should be (LockGrant(resource))
@@ -35,7 +40,7 @@ class LockManagerSpec extends FlatSpec with Matchers with ScalaFutures {
     implicit val timeout = akka.util.Timeout(3.seconds)
     import system.dispatcher
     val resource = "r1"
-    val manager = system.actorOf(Props(new LockManager))
+    val manager = lockManager(system)
     val l1 = (manager ? LockAcquireRequest(resource, 2.seconds, defaultHoldTimeout))
     val l2 = (manager ? LockAcquireRequest(resource, 1.seconds, defaultHoldTimeout)).map {
       case _: LockGrant => true
@@ -52,7 +57,7 @@ class LockManagerSpec extends FlatSpec with Matchers with ScalaFutures {
     implicit val timeout = akka.util.Timeout(10.seconds)
     import system.dispatcher
     val resource = "r1"
-    val manager = system.actorOf(Props(new LockManager))
+    val manager = lockManager(system)
 
     val l1 = (manager ? LockAcquireRequest(resource, 2.seconds, defaultHoldTimeout)).asInstanceOf[Future[LockGrant]]
     l1.onSuccess { case x  => manager ! LockReleaseRequest(resource) }
@@ -75,7 +80,7 @@ class LockManagerSpec extends FlatSpec with Matchers with ScalaFutures {
     implicit val timeout = akka.util.Timeout(10.seconds)
     import system.dispatcher
     val resource = "r1"
-    val manager = system.actorOf(Props(new LockManager))
+    val manager = lockManager(system)
 
     val l1 = (manager ? LockAcquireRequest(resource, 2.seconds, defaultHoldTimeout)).asInstanceOf[Future[LockGrant]]
     l1.onSuccess { case x  => manager ! LockReleaseRequest(resource) }

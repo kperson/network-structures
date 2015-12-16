@@ -7,6 +7,12 @@ import udata.queue.AsyncQueueClient
 
 package object udata {
 
+  object HubActorSystem {
+
+    lazy val system = ActorSystem("hub-server")
+
+  }
+
   class UDataClients (endpoint: String, actorSystem: Option[ActorSystem] = None) {
 
     implicit lazy val system = actorSystem.getOrElse(UDataClients.system)

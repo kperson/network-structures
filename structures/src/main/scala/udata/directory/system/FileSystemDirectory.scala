@@ -1,4 +1,4 @@
-package udata.directory.file
+package udata.directory.system
 
 import java.io._
 
@@ -9,7 +9,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import udata.directory.Directory
 
 
-class FileDirectory(rootPath: File)(implicit val ec: ExecutionContext) extends Directory {
+
+
+
+class FileSystemDirectory(rootPath: File)(implicit val ec: ExecutionContext) extends Directory {
 
   rootPath.mkdirs()
 

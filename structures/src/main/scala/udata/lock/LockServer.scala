@@ -9,6 +9,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 import udata.server.BasicSprayServer
+import udata.lock.LockManager._
 
 
 trait LockServer extends BasicSprayServer {
@@ -22,7 +23,7 @@ trait LockServer extends BasicSprayServer {
     val acquireTimeout = params("acquireTimeout").head.toLong.milliseconds
     val holdTimeout = params("holdTimeout").head.toLong.milliseconds
     val askTimeout: FiniteDuration = acquireTimeout + 2.seconds
-    val fetch = (lockManager ? LockAcquireRequest(resource, acquireTimeout, holdTimeout))(askTimeout).asInstanceOf[Future[LockResponse]]
+    val fetch = (lockManager ? LockAcquireRequest(resource, acquireTimeout, holdTimeout))(askTimeout).asInstanceOf[Future[LockAcquireResponse]]
 
     fetch onSuccess {
       case x: LockGrant => client ! HttpResponse(status = 200)

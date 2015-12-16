@@ -6,12 +6,19 @@ import akka.actor.{ActorSystem, Props}
 import akka.io.IO
 
 import spray.can.Http
+import udata.directory.Directory
 
-import udata.directory.file.FileDirectory
-import udata.HubServerConfig
+import udata.directory.system.FileSystemDirectory
+import udata.{HubActorSystem, HubServerConfig}
 
 
 case class ServerArguments(host: String = "0.0.0.0", port: Int = 8080, directoryPath: String = "/tmp/structure-path/directory")
+
+object Server {
+
+  implicit lazy val system = ActorSystem("hub-server")
+
+}
 
 object Main extends App  {
 
@@ -36,13 +43,14 @@ object Main extends App  {
   parser().parse(args, ServerArguments()) match {
     case Some(config) =>
 
-      implicit val system = ActorSystem("hub-server")
-      import system.dispatcher
+      implicit val system = HubActorSystem.system
 
       val serverConfig = new HubServerConfig()
+      val directory = Class.forName(serverConfig.directoryManagerClassName).newInstance().asInstanceOf[Directory]
+
       val handler = system.actorOf(Props(
         new HubServer(
-          new FileDirectory(new File(config.directoryPath)),
+          directory,
           serverConfig
         )).withDispatcher("akka.pubsub-dispatcher"))
       IO(Http) ! Http.Bind(handler, interface = config.host, port = config.port)

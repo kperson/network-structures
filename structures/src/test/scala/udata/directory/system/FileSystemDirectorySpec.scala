@@ -1,4 +1,4 @@
-package udata.directory.file
+package udata.directory.system
 
 import java.io.File
 
@@ -9,7 +9,7 @@ import org.scalatest.BeforeAndAfter
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class FileDirectorySpec extends DirectorySpec with BeforeAndAfter {
+class FileSystemDirectorySpec extends DirectorySpec with BeforeAndAfter {
 
   val f = new File(System.getProperty("java.io.tmpdir"), "directorytest")
 
@@ -17,6 +17,6 @@ class FileDirectorySpec extends DirectorySpec with BeforeAndAfter {
     FileUtils.deleteDirectory(f)
   }
 
-  lazy val directory = new FileDirectory(f)
+  lazy val directory = new FileSystemDirectory(f)
 
 }

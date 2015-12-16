@@ -8,6 +8,19 @@ import scala.collection.mutable.{Map => MutableMap, ListBuffer => MutableList }
 import scala.concurrent.duration.FiniteDuration
 
 
+object LockManager {
+
+  case class LockAcquireRequest (resource: String, acquireTimeout: FiniteDuration, holdTimeOut: FiniteDuration)
+  case class LockReleaseRequest (resource: String, auto: Boolean = false)
+
+  sealed trait LockAcquireResponse
+
+  case class LockGrant  (resource: String) extends LockAcquireResponse
+  case class LockTimeout(timeout: FiniteDuration) extends LockAcquireResponse
+
+}
+
+import LockManager._
 sealed trait LockAction {
 
   def lockId: Long = {
@@ -21,26 +34,16 @@ sealed trait LockAction {
 
 case class LockCheck private[lock] (lockId: Option[Long], resource: String, acquire: Boolean)
 
-
-sealed trait LockResponse
-
-case class LockGrant  (resource: String) extends LockResponse
-case class LockTimeout(timeout: FiniteDuration) extends LockResponse
-
-
-case class LockAcquire private[lock] (resource: String, promise: Promise[LockResponse], id: Long, holdTimeOut: FiniteDuration) extends LockAction
+case class LockAcquire private[lock] (resource: String, promise: Promise[LockAcquireResponse], id: Long, holdTimeOut: FiniteDuration) extends LockAction
 case class LockRelease private[lock](resource: String, id: Long) extends LockAction
 
-case class LockAcquireRequest private[lock] (resource: String, acquireTimeout: FiniteDuration, holdTimeOut: FiniteDuration)
-case class LockReleaseRequest private[lock] (resource: String, auto: Boolean = false)
-
-
-class LockManager extends Actor {
+class LocalLockManager extends Actor {
 
   private val nextIds: MutableMap[String, Long] = MutableMap.empty
   private val queues: MutableMap[String, MutableList[(LockAction)]] = MutableMap.empty
 
   import context.dispatcher
+  import LockManager._
 
   context.system.eventStream.subscribe(self, classOf[DeadLetter])
 
@@ -52,8 +55,8 @@ class LockManager extends Actor {
   }
 
 
-  def lock(resource: String, acquireTimeout: FiniteDuration, holdTimeout: FiniteDuration) : Future[LockResponse] = {
-    val promise = Promise[LockResponse]()
+  def lock(resource: String, acquireTimeout: FiniteDuration, holdTimeout: FiniteDuration) : Future[LockAcquireResponse] = {
+    val promise = Promise[LockAcquireResponse]()
     val queue = queueForResource(resource)
     val acquisition = LockAcquire(resource, promise, next(resource), holdTimeout)
     queue.append(acquisition)
