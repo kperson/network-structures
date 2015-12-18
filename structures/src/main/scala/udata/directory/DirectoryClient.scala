@@ -63,11 +63,15 @@ class DirectoryClient(endpoint: String)(implicit system: ActorSystem) extends Sp
       case r@HttpResponse(status, _, _, _) if r.headers.find(_.name == "X-Type").map(_.value) == Some("File") =>
         FileContent(inputStream)
       case r@HttpResponse(status, _, _, _) =>
-        DirectoryContent(parse[DirectoryListing](inputStream))
+        val listing = DirectoryContent(parse[DirectoryListing](inputStream))
+        inputStream.close()
+        listing
     }
 
     res.recoverWith {
       case FailedHttpResponse(r) if r.status.intValue == 404 => Future.failed(ResourceNotFoundException())
+      case x => println(x)
+        Future.failed(x)
     }
   }
 

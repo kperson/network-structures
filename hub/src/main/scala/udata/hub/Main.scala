@@ -12,7 +12,7 @@ import udata.directory.system.FileSystemDirectory
 import udata.{HubActorSystem, HubServerConfig}
 
 
-case class ServerArguments(host: String = "0.0.0.0", port: Int = 8080, directoryPath: String = "/tmp/structure-path/directory")
+case class ServerArguments(host: String = "0.0.0.0", port: Int = 8080)
 
 object Server {
 
@@ -34,10 +34,6 @@ object Main extends App  {
     opt[Int]("port")  action { (x, c) =>
       c.copy(port = x)
     } text("the port the server will bind to")
-
-    opt[String]("directory") action { (x, c) =>
-      c.copy(directoryPath = x)
-    }
   }
 
   parser().parse(args, ServerArguments()) match {

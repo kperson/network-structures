@@ -6,7 +6,7 @@ resolvers += Resolver.sonatypeRepo("public")
 
 lazy val commonSettings = Seq(
   organization := "com.kperson",
-  version := "0.0.2-SNAPSHOT",
+  version := "0.0.4-SNAPSHOT",
   scalaVersion := "2.11.7",
   parallelExecution in Test := false,
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
@@ -22,7 +22,7 @@ lazy val commonSettings = Seq(
 lazy val structures = (project in file("structures")).
   settings(commonSettings).
   settings(libraryDependencies ++= Seq(
-    "org.scalatest"     %% "scalatest"      % "2.2.4"   % "test",
+    "org.scalatest"     %% "scalatest"      % "2.2.4",
     "io.spray"          %% "spray-can"      % "1.3.3",
     "commons-io"        %  "commons-io"     % "2.4",
     "com.typesafe.akka" %% "akka-actor"     % "2.3.13",
@@ -31,6 +31,7 @@ lazy val structures = (project in file("structures")).
     "org.scalatra"      %% "scalatra"       % "2.3.1",
     "com.gilt"          %% "jerkson"        % "0.6.8"
   ))
+
 
 
 lazy val hub = (project in file("hub")).

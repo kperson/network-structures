@@ -18,7 +18,6 @@ class HubServer(val directory: Directory, val config: HubServerConfig)
   with LockServer
 {
 
-  //println(config.directoryManagerClassName)
   lazy val lockManager = context.actorOf(Props(Class.forName(config.lockManagerClassName).asInstanceOf[Class[Actor]]))
   lazy val pubSubManager = context.actorOf(Props[PubSubManagerActor])
   lazy val queueManager = context.actorOf(Props[AsyncQueueManagerActor])
