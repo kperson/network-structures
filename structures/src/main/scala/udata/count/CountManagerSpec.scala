@@ -17,24 +17,24 @@ trait CountManagerSpec extends FlatSpec with Matchers with ScalaFutures {
 
   def countManager(system: ActorSystem): ActorRef
 
-  "CountManager" should "increment" in {
+  "CountManager" should "increment" in withActorSystem { system =>
     implicit val system = ActorSystem("c1")
     val resource = "r1"
-    implicit val timeout = akka.util.Timeout(3.seconds)
+    implicit val timeout = akka.util.Timeout(5.seconds)
     import system.dispatcher
     val manager = countManager(system)
-    val inc = (manager ? UpdateCountRequest(resource, 20, 1.minute)).flatMap { case x =>
+    val inc = (manager ? UpdateCountRequest(resource, 20, 5.seconds)).flatMap { case x =>
       manager ? ResourceCountRequest(resource)
     }.asInstanceOf[Future[ResourceCountResponse]]
-    whenReady(inc, 3.seconds) { a =>
+    whenReady(inc, 5.seconds) { a =>
       a.count should be (20)
     }
   }
 
-  "CountManager" should "timeout" in {
+  "CountManager" should "timeout" in withActorSystem { system =>
     implicit val system = ActorSystem("c2")
     val resource = "r1"
-    implicit val timeout = akka.util.Timeout(3.seconds)
+    implicit val timeout = akka.util.Timeout(5.seconds)
     import system.dispatcher
     val countTimeout = 200.milliseconds
     val manager = countManager(system)
@@ -43,15 +43,14 @@ trait CountManagerSpec extends FlatSpec with Matchers with ScalaFutures {
       manager ? ResourceCountRequest(resource)
     }.asInstanceOf[Future[ResourceCountResponse]]
 
-    whenReady(inc, 3.seconds) { a =>
+    whenReady(inc, 5.seconds) { a =>
       a.count should be (0)
     }
   }
 
-  "CountManager" should "replace" in {
-    implicit val system = ActorSystem("c2")
+  "CountManager" should "replace" in withActorSystem { system =>
     val resource = "r1"
-    implicit val timeout = akka.util.Timeout(3.seconds)
+    implicit val timeout = akka.util.Timeout(5.seconds)
     import system.dispatcher
     val countTimeout = 10.seconds
     val manager = countManager(system)
@@ -62,15 +61,15 @@ trait CountManagerSpec extends FlatSpec with Matchers with ScalaFutures {
       manager ? ResourceCountRequest(resource)
     }.asInstanceOf[Future[ResourceCountResponse]]
 
-    whenReady(inc, 3.seconds) { a =>
+    whenReady(inc, 5.seconds) { a =>
       a.count should be (30)
     }
   }
 
-  "CountManager" should "accumulate" in {
+  "CountManager" should "accumulate" in withActorSystem { system =>
     implicit val system = ActorSystem("c2")
     val resource = "r1"
-    implicit val timeout = akka.util.Timeout(3.seconds)
+    implicit val timeout = akka.util.Timeout(5.seconds)
     import system.dispatcher
     val countTimeout = 10.seconds
     val manager = countManager(system)
@@ -80,7 +79,7 @@ trait CountManagerSpec extends FlatSpec with Matchers with ScalaFutures {
     }.flatMap { case _ =>
       manager ? ResourceCountRequest(resource)
     }.asInstanceOf[Future[ResourceCountResponse]]
-    whenReady(inc, 3.seconds) { a =>
+    whenReady(inc, 5.seconds) { a =>
       a.count should be (50)
     }
   }

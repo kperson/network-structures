@@ -9,7 +9,7 @@ Vagrant.configure(2) do |config|
     p.name = "structures"
     p.memory = 4096
     p.cpus = 4
-    p.customize ["modifyvm", :id, "--cpuexecutioncap", "75"]
+    p.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
   end
 
   config.vm.hostname = "structures.kelt.com"
