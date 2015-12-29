@@ -12,20 +12,32 @@ import scala.concurrent.duration._
 import udata.server.{SingleRequestBody, ChunkedRequestBody, BasicSprayServer}
 
 
-case class AddListener(topicKey: String)
-case class AddListenerResponse(key: String, listenerId: Long)
-case class RemoveListener(key: String, listenerId: Long)
+object PubSubManagerActor {
 
-case class SaveRequest(key: String, bytes: Array[Byte])
-case class ReceivedAck(key: String, dataId: Long, listenerId: Long)
-case class PushedData(dataId: Long, payload: Array[Byte])
+  case class AddListenerRequest(topicKey: String)
+
+  case class AddListenerResponse(key: String, listenerId: Long)
+
+  case class RemoveListenerRequest(key: String, listenerId: Long)
+
+  case class SaveRequest(key: String, bytes: Array[Byte])
+
+  case class ReceivedAckRequest(key: String, dataId: Long, listenerId: Long)
+
+  case class PushedData(dataId: Long, payload: Array[Byte])
+
+  lazy val pubSubManager:PubSubManager[Array[Byte]] = new LocalPubSubManager[Array[Byte]]()
+
+}
 
 class PubSubManagerActor extends Actor {
+
+  import PubSubManagerActor._
 
   val manager = PubSubManagerActor.pubSubManager
 
   def receive = {
-    case AddListener(key) =>
+    case AddListenerRequest(key) =>
       val listener = sender
       val actorId = manager.addListener(key) { x =>
         listener ! PushedData(x.dataId, x.payload)
@@ -33,16 +45,12 @@ class PubSubManagerActor extends Actor {
       sender ! AddListenerResponse(key, actorId)
     case SaveRequest(key, bytes) =>
       manager.save(key, bytes)
-    case ReceivedAck(key, dataId, listenerId) =>
+    case ReceivedAckRequest(key, dataId, listenerId) =>
       manager.waitForNext(key, dataId, listenerId)
-    case RemoveListener(key, listenerId) =>
+    case RemoveListenerRequest(key, listenerId) =>
       manager.removeListener(key, listenerId)
   }
 
-}
-
-object PubSubManagerActor {
-  lazy val pubSubManager = new PubSubManager[Array[Byte]]()
 }
 
 
@@ -54,23 +62,24 @@ class PubSubSubscriberActor(client: ActorRef, manager: ActorRef, key: String, pa
   client ! ChunkedResponseStart(HttpResponse(entity = " " * padding)).withAck(PubSubStreamerConnect())
 
   var actorId: Option[Long] = None
+  import PubSubManagerActor._
 
   def receive = {
     case PubSubStreamerConnect() =>
       println("push connection established")
-      manager ! AddListener(key)
+      manager ! AddListenerRequest(key)
     case AddListenerResponse(_, listenerId) =>
       actorId = Some(listenerId)
     case c @ PushedData(dataId, bytes) =>
       client ! MessageChunk(bytes).withAck(PubSubStreamerAck(dataId))
     case PubSubStreamerAck(dataId) =>
       actorId.foreach { aId =>
-          manager ! ReceivedAck(key, dataId, aId)
+          manager ! ReceivedAckRequest(key, dataId, aId)
       }
     case ev: Http.ConnectionClosed =>
       println("closing subscribe channel")
       actorId.foreach { aId =>
-        manager ! RemoveListener(key, aId)
+        manager ! RemoveListenerRequest(key, aId)
       }
 
   }
@@ -79,6 +88,7 @@ class PubSubSubscriberActor(client: ActorRef, manager: ActorRef, key: String, pa
 class PubSubPublisherActor(client: ActorRef, manager: ActorRef, key: String, request: HttpRequest, chunked: Boolean) extends Actor {
 
   client ! CommandWrapper(SetRequestTimeout(Duration.Inf))
+  import PubSubManagerActor._
 
   if(!chunked) {
     val data = request.asPartStream().flatMap {
