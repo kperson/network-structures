@@ -12,48 +12,6 @@ import scala.concurrent.duration._
 import udata.server.{SingleRequestBody, ChunkedRequestBody, BasicSprayServer}
 
 
-object PubSubManagerActor {
-
-  case class AddListenerRequest(topicKey: String)
-
-  case class AddListenerResponse(key: String, listenerId: Long)
-
-  case class RemoveListenerRequest(key: String, listenerId: Long)
-
-  case class SaveRequest(key: String, bytes: Array[Byte])
-
-  case class ReceivedAckRequest(key: String, dataId: Long, listenerId: Long)
-
-  case class PushedData(dataId: Long, payload: Array[Byte])
-
-  lazy val pubSubManager:PubSubManager[Array[Byte]] = new LocalPubSubManager[Array[Byte]]()
-
-}
-
-class PubSubManagerActor extends Actor {
-
-  import PubSubManagerActor._
-
-  val manager = PubSubManagerActor.pubSubManager
-
-  def receive = {
-    case AddListenerRequest(key) =>
-      val listener = sender
-      val actorId = manager.addListener(key) { x =>
-        listener ! PushedData(x.dataId, x.payload)
-      }
-      sender ! AddListenerResponse(key, actorId)
-    case SaveRequest(key, bytes) =>
-      manager.save(key, bytes)
-    case ReceivedAckRequest(key, dataId, listenerId) =>
-      manager.waitForNext(key, dataId, listenerId)
-    case RemoveListenerRequest(key, listenerId) =>
-      manager.removeListener(key, listenerId)
-  }
-
-}
-
-
 case class PubSubStreamerAck(dataId: Long)
 case class PubSubStreamerConnect()
 

@@ -32,26 +32,26 @@ class LocalPubSubManager[T] extends PubSubManager[T]  {
   private var nextListenerId:Long = 0
   private val keyMap = new KeyMap()
 
-  protected def next(key: String): Long = {
+  private def next(key: String): Long = {
     val dataId = keyTable(key).nextDataId
     keyMap(key) = keyMap(key).copy(nextDataId = dataId + 1)
     dataId
   }
 
-  protected def lastDataId(key: String): Long = {
+  private def lastDataId(key: String): Long = {
     keyTable(key).nextDataId
   }
 
-  protected def dataTable(key: String): ChannelMap = keyTable(key).data
+  private def dataTable(key: String): ChannelMap = keyTable(key).data
 
-  protected def listenerCountTable(key: String) : CountMap = keyMap(key).counts
+  private def listenerCountTable(key: String) : CountMap = keyMap(key).counts
 
 
-  protected def updateListenerCountTable(key: String, dataId: DataId, count: Long)  {
+  private def updateListenerCountTable(key: String, dataId: DataId, count: Long)  {
     listenerCountTable(key)(dataId) = count
   }
 
-  protected def decListenerCountTable(key: String)(dataId: DataId)  {
+  private def decListenerCountTable(key: String)(dataId: DataId)  {
     val nextDown = listenerCountTable(key).get(dataId).getOrElse(0L) - 1L
     if(nextDown <= 0) {
       listenerCountTable(key).remove(dataId)
@@ -63,11 +63,9 @@ class LocalPubSubManager[T] extends PubSubManager[T]  {
   }
 
 
-  protected def listenerTable(key: String): ListenerMap = keyTable(key).listeners
+  private def listenerTable(key: String): ListenerMap = keyTable(key).listeners
 
-  protected def keys: List[String] = keyMap.keys.toList
-
-  protected def keyTable(key: String): KeyMeta = {
+  private def keyTable(key: String): KeyMeta = {
     keyMap.get(key) match {
       case Some(t) => t
       case _ =>
@@ -76,7 +74,7 @@ class LocalPubSubManager[T] extends PubSubManager[T]  {
     }
   }
 
-  protected def startDataId(key: String) : Long = {
+  private def startDataId(key: String) : Long = {
     val readyIds = listenerTable(key).flatMap { x =>
       x._2.dataStatus match {
         case ReadyFor(dId) => Some(dId)
@@ -90,6 +88,18 @@ class LocalPubSubManager[T] extends PubSubManager[T]  {
       readyIds.min
     }
   }
+
+  private def countForDataId(key: String, dataId: Long): Int = {
+    listenerTable(key).count { case (_, w) =>
+      w match {
+        case WaitingFor(_, ReadyFor(dId)) if dId <= dataId => true
+        case WaitingFor(_, OnWire(dId)) if dId < dataId => true
+        case _ => false
+      }
+    }
+  }
+
+  def keys: List[String] = keyMap.keys.toList
 
   def addListener(key: String, autoAck:Boolean)(callback:(DataReceived[T]) => Unit) : Long = {
 
@@ -111,27 +121,14 @@ class LocalPubSubManager[T] extends PubSubManager[T]  {
     listenerId
   }
 
-  private def countForDataId(key: String, dataId: Long): Int = {
-    listenerTable(key).count { case (_, w) =>
-      w match {
-        case WaitingFor(_, ReadyFor(dId)) if dId <= dataId => true
-        case WaitingFor(_, OnWire(dId)) if dId < dataId => true
-        case _ => false
-      }
-    }
-  }
-
   def save(key: String, payload: T) {
-    load(key, payload)
-  }
-
-  protected def load(key: String, payload: T) {
     val nextDataId = next(key)
     val listenerCount = countForDataId(key, nextDataId)
     updateListenerCountTable(key, nextDataId, listenerCount)
     dataTable(key)(nextDataId) = Data(payload)
     checkForDeliveryAndSend(nextDataId, key)
   }
+
 
   def removeListener(key: String, listenerId: Long) {
     val last = lastDataId(key)

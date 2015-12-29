@@ -6,7 +6,7 @@ import udata.HubServerConfig
 import udata.count.CountServer
 import udata.directory.{DirectoryServer, Directory}
 import udata.lock.LockServer
-import udata.pubsub.{PubSubServer, PubSubManagerActor}
+import udata.pubsub.{LocalPubSubManagerActor, PubSubServer}
 import udata.queue.{AsyncQueueManagerActor, QueueServer}
 
 
@@ -19,7 +19,7 @@ class HubServer(val directory: Directory, val config: HubServerConfig)
 {
 
   lazy val lockManager = context.actorOf(Props(Class.forName(config.lockManagerClassName).asInstanceOf[Class[Actor]]))
-  lazy val pubSubManager = context.actorOf(Props[PubSubManagerActor])
+  lazy val pubSubManager = context.actorOf(Props[LocalPubSubManagerActor])
   lazy val queueManager = context.actorOf(Props[AsyncQueueManagerActor])
   lazy val countManager = context.actorOf(Props(Class.forName(config.countManagerClassName).asInstanceOf[Class[Actor]]))
 

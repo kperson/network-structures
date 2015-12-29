@@ -1,9 +1,15 @@
 package udata.pubsub
 
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{ Matchers, FlatSpec}
 
+import scala.concurrent.Promise
+import scala.concurrent.duration._
 
-trait PubSubManagerSpec extends FlatSpec with Matchers {
+import udata.util.TestUtils._
+
+
+trait PubSubManagerSpec extends FlatSpec with Matchers with ScalaFutures {
 
   def pubSubManager(testCode:(PubSubManager[Array[Byte]]) => Any)
 
@@ -13,71 +19,81 @@ trait PubSubManagerSpec extends FlatSpec with Matchers {
 
   "PubSubManager" should "add a listener and broadcast" in pubSubManager { manager =>
     var receiveCt = 0
+    val promise = Promise[Int]()
     manager.addListener(testKey) { data =>
       receiveCt = receiveCt + 1
       data.payload should be (payload.getBytes)
+      promise.success(1)
     }
     manager.save(testKey, payload.getBytes)
-    Thread.sleep(1500)
-    receiveCt should be (1)
+    whenReady(promise.future, 5.seconds) { ct =>
+      ct should be(1)
+    }
   }
 
   "PubSubManager" should "remove a listener" in pubSubManager { manager =>
     var receiveCt = 0
-    val listenerId = manager.addListener(testKey) { data =>
+    val promise = Promise[Int]()
+    var listenerId = 0L
+    listenerId = manager.addListener(testKey) { data =>
       receiveCt = receiveCt + 1
+      assert(receiveCt < 2)
+      if(receiveCt == 1) {
+        promise.success(1)
+        manager.removeListener(testKey, listenerId)
+        manager.save(testKey, payload.getBytes)
+      }
     }
-    manager.removeListener(testKey, listenerId)
-    Thread.sleep(1500)
     manager.save(testKey, payload.getBytes)
-    receiveCt should be (0)
+    whenReady(promise.future, 5.seconds) { ct =>
+      ct should be(1)
+    }
   }
 
   "PubSubManager" should "deliver data when received" in pubSubManager { manager =>
     var receiveCt = 0
     var listenerId: Long = 0
+    val promise = Promise[Int]()
     listenerId = manager.addListener(testKey) { data =>
-      receiveCt = receiveCt + 1
       manager.waitForNext(testKey, data.dataId, listenerId)
+      receiveCt = receiveCt + 1
+      if(receiveCt == 2) {
+        promise.success(2)
+      }
     }
     manager.save(testKey, "bob".getBytes)
     manager.save(testKey, "bob".getBytes)
-    Thread.sleep(1500)
-    receiveCt should be (2)
+    whenReady(promise.future, 5.seconds) { ct =>
+      ct should be (2)
+    }
   }
 
   "PubSubManager" should "deliver data when received and auto ack when set" in pubSubManager { manager =>
     var receiveCt = 0
     var listenerId: Long = 0
+    val promise = Promise[Int]()
     listenerId = manager.addListener(testKey, true) { data =>
       receiveCt = receiveCt + 1
+      if(receiveCt == 2) {
+        promise.success(2)
+      }
     }
     manager.save(testKey, "bob".getBytes)
     manager.save(testKey, "bob".getBytes)
-    Thread.sleep(1500)
-    receiveCt should be (2)
+
+    whenReady(promise.future, 5.seconds) { ct =>
+      ct should be(2)
+    }
   }
 
   "PubSubManager" should "only deliver data on the listening channel" in pubSubManager { manager =>
     var receiveCt = 0
     manager.addListener(testKey) { data =>
+      assert(true == false)
       receiveCt = receiveCt + 1
     }
     manager.save(testKey2, payload.getBytes)
-    Thread.sleep(1500)
     receiveCt should be (0)
-  }
-
-  "PubSubManager" should "allow a subscribe to join mid stream" in pubSubManager { manager =>
-    manager.save(testKey, payload.getBytes)
-
-    var receiveCt = 0
-    manager.addListener(testKey) { data =>
-      receiveCt = receiveCt + 1
-    }
-    manager.save(testKey, payload.getBytes)
-    Thread.sleep(1500)
-    receiveCt should be (1)
   }
 
 }

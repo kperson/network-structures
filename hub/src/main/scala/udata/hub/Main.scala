@@ -1,14 +1,11 @@
 package udata.hub
 
-import java.io.File
-
 import akka.actor.{ActorSystem, Props}
 import akka.io.IO
 
 import spray.can.Http
 import udata.directory.Directory
 
-import udata.directory.system.FileSystemDirectory
 import udata.{HubActorSystem, HubServerConfig}
 
 

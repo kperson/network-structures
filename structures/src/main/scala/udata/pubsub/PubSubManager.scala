@@ -21,5 +21,6 @@ trait PubSubManager[T] {
   def waitForNext(key: String, dataId: Long, listenerId: Long)
   def addListener(key: String, autoAck:Boolean)(callback:(DataReceived[T]) => Unit) : Long
   def addListener(key: String)(callback:(DataReceived[T]) => Unit) : Long = addListener(key, false)(callback)
+  def keys: List[String]
 
 }
