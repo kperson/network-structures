@@ -1,6 +1,7 @@
 package udata.pubsub
 
 import akka.actor.{Props, Actor, ActorSystem, ActorRef}
+import akka.pattern.ask
 
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{Matchers, FlatSpec}
@@ -25,6 +26,7 @@ trait PubSubManagerActorSpec extends FlatSpec with Matchers with ScalaFutures {
     private var ct = 0
 
     override def save(key: String, payload: Array[Byte]) {
+      super.save(key, payload)
       ct = ct + 1
       if(ct == threshold) {
         promise.success(threshold)
@@ -36,10 +38,16 @@ trait PubSubManagerActorSpec extends FlatSpec with Matchers with ScalaFutures {
   val p1 = Promise[Int]()
   val t1 = new PublishTestThresholdManager(p1, 2)
   "PubSubManagerActor" should "queue data" in withManager(t1) { ref =>
-    ref ! AddListenerRequest(testKey)
-    ref ! SaveRequest(testKey, testData.getBytes)
-    ref ! SaveRequest(testKey, testData.getBytes)
-    whenReady(p1.future, 3.seconds) { ct =>
+    implicit val timeout = akka.util.Timeout(3.seconds)
+    val sys = system
+    import sys.dispatcher
+
+    val addRequest = ref ? AddListenerRequest(testKey)
+    addRequest.onSuccess { case _ =>
+      ref ! SaveRequest(testKey, testData.getBytes)
+      ref ! SaveRequest(testKey, testData.getBytes)
+    }
+    whenReady(p1.future, 5.seconds) { ct =>
       ct should be (2)
     }
   }
@@ -84,6 +92,7 @@ trait PubSubManagerActorSpec extends FlatSpec with Matchers with ScalaFutures {
   class ReceivedAckTestManager(promise: Promise[Int]) extends LocalPubSubManager[Array[Byte]] {
 
     override def waitForNext(key: String, dataId: Long, listenerId: Long) {
+      super.waitForNext(key, dataId, listenerId)
       promise.success(1)
     }
 
@@ -114,7 +123,12 @@ trait PubSubManagerActorSpec extends FlatSpec with Matchers with ScalaFutures {
         if (threshold == ct) {
           promise.success(threshold)
         }
-      case AddListenerResponse(_, lId) => listenerId = Some(lId)
+      case AddListenerResponse(_, lId) =>
+        listenerId = Some(lId)
+        (0 until threshold).foreach { _ =>
+          actorRef ! SaveRequest(testKey, testData.getBytes)
+          actorRef ! SaveRequest(testKey, testData.getBytes)
+        }
     }
   }
 
@@ -122,10 +136,6 @@ trait PubSubManagerActorSpec extends FlatSpec with Matchers with ScalaFutures {
     val p5 = Promise[Int]()
     val threshold = 3
     system.actorOf(Props(new ReceivedMessageTestActor(p5, ref, threshold)))
-    (0 until threshold).foreach { _ =>
-      ref ! SaveRequest(testKey, testData.getBytes)
-      ref ! SaveRequest(testKey, testData.getBytes)
-    }
     whenReady(p5.future, 5.seconds) { ct =>
       ct should be (threshold)
     }
