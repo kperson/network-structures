@@ -8,10 +8,9 @@ class AsyncQueueManagerSpec extends FlatSpec with Matchers {
   val topic = "hello"
   val message = "my message"
 
-  var manager:AsyncQueueManager[String] = null
 
   "AsyncQueueManager" should "listen" in {
-    manager = new AsyncQueueManager[String]()
+    val manager = new AsyncQueueManager[String]()
 
     var ct = 0
     manager.listen(topic) { msg =>
@@ -27,7 +26,7 @@ class AsyncQueueManagerSpec extends FlatSpec with Matchers {
   }
 
   "AsyncQueueManager" should "buffer delivery" in {
-    manager = new AsyncQueueManager[String]()
+    val manager = new AsyncQueueManager[String]()
     var ct = 0
     manager.save(topic, message)
 

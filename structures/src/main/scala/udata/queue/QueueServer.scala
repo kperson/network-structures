@@ -12,35 +12,9 @@ import scala.concurrent.duration.Duration
 import udata.server.{ChunkedRequestBody, SingleRequestBody, BasicSprayServer}
 
 
-case class QueueSaveRequest(key: String, bytes: Array[Byte])
-case class QueueListenRequest(key: String)
-case class QueueListenResponse(key: String, listenerId: Long)
-case class DeQueueData(key: String, bytes: Array[Byte])
-case class RemoveQueueListener(key: String, listenerId: Long)
-
-class AsyncQueueManagerActor extends Actor {
-
-  val manager = AsyncQueueManagerActor.queueManager
-
-  def receive = {
-    case QueueSaveRequest(key, bytes) => manager.save(key, bytes)
-    case QueueListenRequest(key) =>
-      val listener = sender
-      val listenerId = manager.listen(key) { data =>
-        listener ! DeQueueData(key, data)
-      }
-      sender ! QueueListenResponse(key, listenerId)
-    case RemoveQueueListener(key, listenerId) =>
-      manager.removeListener(key, listenerId)
-
-  }
-
-}
-
-
-case class QueueListenConnect()
-
 class QueueServerPushActor(client: ActorRef, manager: ActorRef, key: String, request: HttpRequest, chunked: Boolean) extends Actor {
+
+  import AsyncQueueManagerActor._
 
   client ! CommandWrapper(SetRequestTimeout(Duration.Inf))
 
@@ -63,17 +37,26 @@ class QueueServerPushActor(client: ActorRef, manager: ActorRef, key: String, req
 
 }
 
+object QueueServerPullActor {
+
+  case object QueueListenConnect
+
+}
+
 class QueueServerPullActor(client: ActorRef, manager: ActorRef, key: String) extends Actor {
 
-  client ! ChunkedResponseStart(HttpResponse()).withAck(QueueListenConnect())
+  import AsyncQueueManagerActor._
+  import QueueServerPullActor._
+
+  client ! ChunkedResponseStart(HttpResponse()).withAck(QueueListenConnect)
   var listenerId: Option[Long] = None
 
 
   def receive = {
-    case QueueListenConnect() =>
+    case QueueListenConnect =>
       manager ! QueueListenRequest(key)
     case QueueListenResponse(_, lId) => listenerId = Some(lId)
-    case DeQueueData(_, data) =>
+    case DeQueueDataResponse(_, data) =>
       client ! MessageChunk(data)
       client ! ChunkedMessageEnd()
       listenerId.foreach { lId =>
@@ -86,13 +69,6 @@ class QueueServerPullActor(client: ActorRef, manager: ActorRef, key: String) ext
       }
     case x => println(s"queue pull: ${x}")
   }
-
-}
-
-
-object AsyncQueueManagerActor {
-
-  lazy val queueManager = new AsyncQueueManager[Array[Byte]]()
 
 }
 

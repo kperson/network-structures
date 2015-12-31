@@ -92,7 +92,6 @@ trait PubSubManagerActorSpec extends FlatSpec with Matchers with ScalaFutures {
   class ReceivedAckTestManager(promise: Promise[Int]) extends LocalPubSubManager[Array[Byte]] {
 
     override def waitForNext(key: String, dataId: Long, listenerId: Long) {
-      super.waitForNext(key, dataId, listenerId)
       promise.success(1)
     }
 

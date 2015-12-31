@@ -6,9 +6,8 @@ resolvers += Resolver.sonatypeRepo("public")
 
 lazy val commonSettings = Seq(
   organization := "com.kperson",
-  version := "0.0.17-SNAPSHOT",
+  version := "0.0.18-SNAPSHOT",
   scalaVersion := "2.11.7",
-  parallelExecution in Test := false,
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
   publishTo := {
     if (isSnapshot.value)
@@ -20,6 +19,10 @@ lazy val commonSettings = Seq(
 
 
 lazy val structures = (project in file("structures")).
+  settings(
+    fork in Test := true,
+    parallelExecution in Test := false
+  ).
   settings(commonSettings).
   settings(libraryDependencies ++= Seq(
     "org.scalatest"     %% "scalatest"      % "2.2.4",

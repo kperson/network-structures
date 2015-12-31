@@ -11,6 +11,8 @@ class HubServerConfig() {
   def lockManagerClassName = config.getString("lock-manager")
   def directoryManagerClassName = config.getString("dir-manager")
   def pubSubManagerClassName = config.getString("pubsub-manager")
+  def queueManagerClassName = config.getString("queue-manager")
+
 
   def actorSystemName = config.getString("actor-system")
 
