@@ -1,6 +1,7 @@
 package udata.queue
 
 import akka.actor.{Props, ActorSystem, Actor, ActorRef}
+import akka.pattern.ask
 
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{Matchers, FlatSpec}
@@ -36,7 +37,13 @@ trait AsyncQueueManagerActorSpec extends FlatSpec with Matchers with ScalaFuture
   val p1 = Promise[Int]()
   val m1 = new EnqueueTestManager(p1)
   "QueueManager" should "enqueue a message" in withManager(m1) { ref =>
-    ref ! QueueSaveRequest(testKey, testMessage.getBytes)
+    implicit val timeout = akka.util.Timeout(3.seconds)
+    val s = system
+    import s.dispatcher
+    val queue = ref ? QueueListenRequest(testKey)
+    queue.onSuccess { case _ =>
+      ref ! QueueSaveRequest(testKey, testMessage.getBytes)
+    }
     whenReady(p1.future, 5.seconds) { ct =>
       ct should be (1)
     }
