@@ -8,6 +8,8 @@ class TestLocalManager(val manager: PubSubManager[Array[Byte]]) extends PubSubMa
 
 class LocalPubSubManagerActorSpec extends PubSubManagerActorSpec with BeforeAndAfterAll {
 
+  def displayName = "Local PubSub Manager"
+
   val system: ActorSystem = ActorSystem("local-pub-sub")
 
   def withManager(manager: PubSubManager[Array[Byte]])(testCode: (ActorRef) => Unit) {

@@ -14,6 +14,9 @@ import udata.util.TestUtils._
 
 trait AsyncQueueManagerActorSpec extends FlatSpec with Matchers with ScalaFutures {
 
+  def displayName: String
+  behavior of displayName
+
   import AsyncQueueManagerActor._
 
   type ByteArray = Array[Byte]
@@ -36,7 +39,7 @@ trait AsyncQueueManagerActorSpec extends FlatSpec with Matchers with ScalaFuture
 
   val p1 = Promise[Int]()
   val m1 = new EnqueueTestManager(p1)
-  "QueueManager" should "enqueue a message" in withManager(m1) { ref =>
+  it should "enqueue a message" in withManager(m1) { ref =>
     implicit val timeout = akka.util.Timeout(3.seconds)
     val s = system
     import s.dispatcher
@@ -61,7 +64,7 @@ trait AsyncQueueManagerActorSpec extends FlatSpec with Matchers with ScalaFuture
 
   val p2 = Promise[Int]()
   val m2 = new RemoveListenerTestManager(p2)
-  "QueueManager" should "remove a listener" in withManager(m2) { ref =>
+  it should "remove a listener" in withManager(m2) { ref =>
     ref ! RemoveQueueListener(testKey, 0)
     whenReady(p2.future, 3.seconds) { ct =>
       ct should be (1)
@@ -84,7 +87,7 @@ trait AsyncQueueManagerActorSpec extends FlatSpec with Matchers with ScalaFuture
 
   }
 
-  "QueueManager" should "deliver messages" in withManager(new AsyncQueueManager[ByteArray]) { ref =>
+  it should "deliver messages" in withManager(new AsyncQueueManager[ByteArray]) { ref =>
     val p = Promise[Int]()
     system.actorOf(Props(new DequeueTestActor(p, ref)))
     whenReady(p.future, 5.seconds) { ct =>

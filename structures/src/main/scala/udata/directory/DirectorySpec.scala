@@ -12,7 +12,7 @@ trait DirectorySpec extends FlatSpec with Matchers with ScalaFutures {
   def directory: Directory
 
 
-  "Directory" should "create a file" in {
+  it should "create a file" in {
     val contents = "contents"
     val file = "hello.txt"
     val makeFetch = directory.addFile(file, contents.getBytes)
@@ -27,7 +27,7 @@ trait DirectorySpec extends FlatSpec with Matchers with ScalaFutures {
   }
 
 
-  "Directory" should "delete a file" in {
+  it should "delete a file" in {
     val contents = "contents"
     val file = "hello1.txt"
     directory.addFile(file, contents.getBytes)

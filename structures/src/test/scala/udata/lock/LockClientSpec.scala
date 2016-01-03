@@ -14,6 +14,8 @@ import udata.util.TestUtils._
 
 class LockClientSpec extends FlatSpec with Matchers with ScalaFutures with HubServerSpec {
 
+  behavior of "Lock Client"
+
   def withLockClient(testCode: (LockClient, ActorSystem) => Any): Unit = {
     withServer { (host, port) =>
       implicit val system = ActorSystem(randomActorId)
@@ -27,7 +29,7 @@ class LockClientSpec extends FlatSpec with Matchers with ScalaFutures with HubSe
     }
   }
 
-  "LockClient" should "lock a resource" in withLockClient { (client, system) =>
+  it should "lock a resource" in withLockClient { (client, system) =>
     val targetResource = "TEST-RESOURCE-1"
     val lockAcquire = client.lock(targetResource, 2.seconds, 2.seconds)
     whenReady(lockAcquire, 2.second) { resource =>
@@ -35,7 +37,7 @@ class LockClientSpec extends FlatSpec with Matchers with ScalaFutures with HubSe
     }
   }
 
-  "LockClient" should "auto unlock after expiration" in withLockClient { (client, system) =>
+  it should "auto unlock after expiration" in withLockClient { (client, system) =>
     import system.dispatcher
     val targetResource = "TEST-RESOURCE-2"
     val lockHoldDuration = 1.second
@@ -48,7 +50,7 @@ class LockClientSpec extends FlatSpec with Matchers with ScalaFutures with HubSe
     }
   }
 
-  "LockClient" should "should timeout" in withLockClient { (client, system) =>
+  it should "should timeout" in withLockClient { (client, system) =>
     import system.dispatcher
     val targetResource = "TEST-RESOURCE-3"
     val lockHoldDuration = 1.second
@@ -62,7 +64,7 @@ class LockClientSpec extends FlatSpec with Matchers with ScalaFutures with HubSe
     }
   }
 
-  "LockClient" should "should manually unlock" in withLockClient { (client, system) =>
+  it should "should manually unlock" in withLockClient { (client, system) =>
     import system.dispatcher
     val targetResource = "TEST-RESOURCE"
     val lockHoldDuration = 10.second

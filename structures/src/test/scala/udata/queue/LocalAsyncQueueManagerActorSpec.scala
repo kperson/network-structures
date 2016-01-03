@@ -8,6 +8,8 @@ class TestLocalQueueManager(val manager: AsyncQueueManager[Array[Byte]]) extends
 
 class LocalAsyncQueueManagerActorSpec extends AsyncQueueManagerActorSpec with BeforeAndAfterAll {
 
+  def displayName = "Local Async Queue Manager Actor"
+
   val system: ActorSystem = ActorSystem("local-queue")
 
   def withManager(manager: AsyncQueueManager[Array[Byte]])(testCode: (ActorRef) => Unit) {

@@ -17,6 +17,9 @@ trait PubSubManagerActorSpec extends FlatSpec with Matchers with ScalaFutures {
 
   def withManager(manager: PubSubManager[Array[Byte]])(testCode: (ActorRef) => Unit)
   def system: ActorSystem
+  def displayName: String
+
+  behavior of displayName
 
   val testKey = "TEST-KEY"
   val testData = "TEST-DATA"
@@ -37,7 +40,7 @@ trait PubSubManagerActorSpec extends FlatSpec with Matchers with ScalaFutures {
   }
   val p1 = Promise[Int]()
   val t1 = new PublishTestThresholdManager(p1, 2)
-  "PubSubManagerActor" should "queue data" in withManager(t1) { ref =>
+  it should "queue data" in withManager(t1) { ref =>
     implicit val timeout = akka.util.Timeout(3.seconds)
     val sys = system
     import sys.dispatcher
@@ -62,7 +65,7 @@ trait PubSubManagerActorSpec extends FlatSpec with Matchers with ScalaFutures {
   }
   val p2 = Promise[Int]()
   val t2 = new RemoveListenerTestManager(p2)
-  "PubSubManagerActor" should "remove a listener" in withManager(t2) { ref =>
+  it should "remove a listener" in withManager(t2) { ref =>
     ref ! RemoveListenerRequest(testKey, 0)
     whenReady(p2.future, 3.seconds) { ct =>
       ct should be (1)
@@ -81,7 +84,7 @@ trait PubSubManagerActorSpec extends FlatSpec with Matchers with ScalaFutures {
   }
   val p3 = Promise[Int]()
   val t3 = new AddListenerTestManager(p3)
-  "PubSubManagerActor" should "add a listener" in withManager(t3) { ref =>
+  it should "add a listener" in withManager(t3) { ref =>
     ref ! AddListenerRequest(testKey)
     whenReady(p3.future, 3.seconds) { ct =>
       ct should be (1)
@@ -98,7 +101,7 @@ trait PubSubManagerActorSpec extends FlatSpec with Matchers with ScalaFutures {
   }
   val p4 = Promise[Int]()
   val t4 = new ReceivedAckTestManager(p4)
-  "PubSubManagerActor" should "receive acknowledgements" in withManager(t4) { ref =>
+  it should "receive acknowledgements" in withManager(t4) { ref =>
     ref ! ReceivedAckRequest(testKey, 0, 0)
     whenReady(p4.future, 3.seconds) { ct =>
       ct should be (1)
@@ -131,7 +134,7 @@ trait PubSubManagerActorSpec extends FlatSpec with Matchers with ScalaFutures {
     }
   }
 
-  "PubSubManagerActor" should "send data" in withManager(new LocalPubSubManager[Array[Byte]]) { ref =>
+  it should "send data" in withManager(new LocalPubSubManager[Array[Byte]]) { ref =>
     val p5 = Promise[Int]()
     val threshold = 3
     system.actorOf(Props(new ReceivedMessageTestActor(p5, ref, threshold)))

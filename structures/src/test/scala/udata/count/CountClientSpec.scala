@@ -14,8 +14,9 @@ import udata.util.TestUtils._
 
 class CountClientSpec extends FlatSpec with Matchers with ScalaFutures with HubServerSpec {
 
+  behavior of "Count Client"
 
-  "CountClient" should "increment count" in withServer { (host, port) =>
+  it should "increment count" in withServer { (host, port) =>
     implicit val system = ActorSystem(randomActorId)
     val client = new CountClient(s"http://${host}:${port}/count")
     val count = 10
@@ -25,7 +26,7 @@ class CountClientSpec extends FlatSpec with Matchers with ScalaFutures with HubS
     }
   }
 
-  "CountClient" should "fetch a count" in withServer { (host, port) =>
+  it should "fetch a count" in withServer { (host, port) =>
     implicit val system = ActorSystem(randomActorId)
     import system.dispatcher
 
@@ -37,7 +38,7 @@ class CountClientSpec extends FlatSpec with Matchers with ScalaFutures with HubS
     }
   }
 
-  "CountClient" should "replace a key" in withServer { (host, port) =>
+  it should "replace a key" in withServer { (host, port) =>
     implicit val system = ActorSystem(randomActorId)
     import system.dispatcher
 
@@ -53,7 +54,7 @@ class CountClientSpec extends FlatSpec with Matchers with ScalaFutures with HubS
     }
   }
 
-  "CountClient" should "expire" in withServer { (host, port) =>
+  it should "expire" in withServer { (host, port) =>
     implicit val system = ActorSystem(randomActorId)
     import system.dispatcher
 
@@ -71,7 +72,7 @@ class CountClientSpec extends FlatSpec with Matchers with ScalaFutures with HubS
     }
   }
 
-  "CountClient" should "accumulate" in withServer { (host, port) =>
+  it should "accumulate" in withServer { (host, port) =>
     implicit val system = ActorSystem(randomActorId)
     import system.dispatcher
 

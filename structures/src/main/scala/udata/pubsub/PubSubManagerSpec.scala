@@ -12,12 +12,14 @@ import udata.util.TestUtils._
 trait PubSubManagerSpec extends FlatSpec with Matchers with ScalaFutures {
 
   def pubSubManager(testCode:(PubSubManager[Array[Byte]]) => Any)
+  def displayName: String
+  behavior of displayName
 
   val testKey = "myKey"
   val testKey2 = "myKey2"
   val payload = "myData"
 
-  "PubSubManager" should "add a listener and broadcast" in pubSubManager { manager =>
+  it should "add a listener and broadcast" in pubSubManager { manager =>
     var receiveCt = 0
     val promise = Promise[Int]()
     manager.addListener(testKey) { data =>
@@ -31,7 +33,7 @@ trait PubSubManagerSpec extends FlatSpec with Matchers with ScalaFutures {
     }
   }
 
-  "PubSubManager" should "remove a listener" in pubSubManager { manager =>
+  it should "remove a listener" in pubSubManager { manager =>
     var receiveCt = 0
     val promise = Promise[Int]()
     var listenerId = 0L
@@ -50,7 +52,7 @@ trait PubSubManagerSpec extends FlatSpec with Matchers with ScalaFutures {
     }
   }
 
-  "PubSubManager" should "deliver data when received" in pubSubManager { manager =>
+  it should "deliver data when received" in pubSubManager { manager =>
     var receiveCt = 0
     var listenerId: Long = 0
     val promise = Promise[Int]()
@@ -68,7 +70,7 @@ trait PubSubManagerSpec extends FlatSpec with Matchers with ScalaFutures {
     }
   }
 
-  "PubSubManager" should "deliver data when received and auto ack when set" in pubSubManager { manager =>
+  it should "deliver data when received and auto ack when set" in pubSubManager { manager =>
     var receiveCt = 0
     var listenerId: Long = 0
     val promise = Promise[Int]()
@@ -86,7 +88,7 @@ trait PubSubManagerSpec extends FlatSpec with Matchers with ScalaFutures {
     }
   }
 
-  "PubSubManager" should "only deliver data on the listening channel" in pubSubManager { manager =>
+  it should "only deliver data on the listening channel" in pubSubManager { manager =>
     var receiveCt = 0
     manager.addListener(testKey) { data =>
       assert(true == false)

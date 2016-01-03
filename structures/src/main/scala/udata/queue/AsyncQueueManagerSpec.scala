@@ -5,11 +5,12 @@ import org.scalatest.{Matchers, FlatSpec}
 
 class AsyncQueueManagerSpec extends FlatSpec with Matchers {
 
+  behavior of "Async Queue Manager"
+
   val topic = "hello"
   val message = "my message"
 
-
-  "AsyncQueueManager" should "listen" in {
+  it should "listen" in {
     val manager = new AsyncQueueManager[String]()
 
     var ct = 0
@@ -25,7 +26,7 @@ class AsyncQueueManagerSpec extends FlatSpec with Matchers {
     ct should be (1)
   }
 
-  "AsyncQueueManager" should "buffer delivery" in {
+  it should "buffer delivery" in {
     val manager = new AsyncQueueManager[String]()
     var ct = 0
     manager.save(topic, message)

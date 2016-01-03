@@ -11,6 +11,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class FileSystemDirectorySpec extends DirectorySpec with BeforeAndAfter {
 
+  behavior of "File System Directory"
+
   val f = new File(System.getProperty("java.io.tmpdir"), "directorytest")
 
   if(f.exists()) {

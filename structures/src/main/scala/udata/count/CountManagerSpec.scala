@@ -15,9 +15,11 @@ import udata.util.TestUtils._
 
 trait CountManagerSpec extends FlatSpec with Matchers with ScalaFutures {
 
+  def displayName: String
+  behavior of displayName
   def countManager(system: ActorSystem): ActorRef
 
-  "CountManager" should "increment" in withActorSystem { system =>
+  it should "increment" in withActorSystem { system =>
     implicit val system = ActorSystem("c1")
     val resource = "r1"
     implicit val timeout = akka.util.Timeout(5.seconds)
@@ -31,7 +33,7 @@ trait CountManagerSpec extends FlatSpec with Matchers with ScalaFutures {
     }
   }
 
-  "CountManager" should "timeout" in withActorSystem { system =>
+  it should "timeout" in withActorSystem { system =>
     implicit val system = ActorSystem("c2")
     val resource = "r1"
     implicit val timeout = akka.util.Timeout(5.seconds)
@@ -48,7 +50,7 @@ trait CountManagerSpec extends FlatSpec with Matchers with ScalaFutures {
     }
   }
 
-  "CountManager" should "replace" in withActorSystem { system =>
+  it should "replace" in withActorSystem { system =>
     val resource = "r1"
     implicit val timeout = akka.util.Timeout(5.seconds)
     import system.dispatcher
@@ -66,7 +68,7 @@ trait CountManagerSpec extends FlatSpec with Matchers with ScalaFutures {
     }
   }
 
-  "CountManager" should "accumulate" in withActorSystem { system =>
+  it should "accumulate" in withActorSystem { system =>
     implicit val system = ActorSystem("c2")
     val resource = "r1"
     implicit val timeout = akka.util.Timeout(5.seconds)

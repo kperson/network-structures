@@ -11,12 +11,7 @@ case class DirectoryListing(files: List[String], directories: List[String]) {
 
 trait Directory {
 
-  implicit def ec: ExecutionContext
 
-  /**
-   *
-   * @return
-   */
   def directories(path: List[String]) : Future[List[String]]
 
   def files(path: List[String]) : Future[List[String]]
@@ -27,7 +22,7 @@ trait Directory {
 
   def delete(path: List[String]): Future[Unit]
 
-  def directoryListing(path: List[String]): Future[DirectoryListing] = {
+  def directoryListing(path: List[String])(implicit ec: ExecutionContext): Future[DirectoryListing] = {
     for {
       dirs <- directories(path)
       files <- files(path)
@@ -46,7 +41,7 @@ trait RichDirectory {
 
   implicit class DirectoryExtension(self: Directory) {
 
-    import self.ec
+    //import self.ec
 
     def addFile(fileName: String, bytes: Array[Byte]) {
       val stream = self.addFile(fileName.split("/").filter(_ != "").toList)
@@ -58,7 +53,7 @@ trait RichDirectory {
       self.fileContents(path.split("/").filter(_ != "").toList)
     }
 
-    def item(path: List[String]) : Future[Option[DirectoryEntry]] = {
+    def item(path: List[String])(implicit ec: ExecutionContext) : Future[Option[DirectoryEntry]] = {
       self.fileContents(path).flatMap {
        case Some(is) => Future.successful(Some(FileItem(is)))
        case _ => self.directoryListing(path).flatMap {
@@ -68,7 +63,7 @@ trait RichDirectory {
      }
     }
 
-    def item(path: String) : Future[Option[DirectoryEntry]] = {
+    def item(path: String)(implicit ec: ExecutionContext) : Future[Option[DirectoryEntry]] = {
       self.item(path.split("/").filter(_ != "").toList)
     }
 

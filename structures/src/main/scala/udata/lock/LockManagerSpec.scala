@@ -17,11 +17,12 @@ import udata.util.TestUtils._
 trait LockManagerSpec extends FlatSpec with Matchers with ScalaFutures {
 
   val defaultHoldTimeout = 10.seconds
+  def displayName: String
+  behavior of displayName
 
   def lockManager(system: ActorSystem): ActorRef
 
-
-  "LockManager" should "acquire a lock" in withActorSystem { system =>
+  it should "acquire a lock" in withActorSystem { system =>
     implicit val timeout = akka.util.Timeout(3.seconds)
     val resource = "r1"
     val manager = lockManager(system)
@@ -31,7 +32,7 @@ trait LockManagerSpec extends FlatSpec with Matchers with ScalaFutures {
     }
   }
 
-  "LockManager" should "queue a lock" in withActorSystem { system =>
+  it should "queue a lock" in withActorSystem { system =>
     implicit val timeout = akka.util.Timeout(3.seconds)
     import system.dispatcher
     val resource = "r1"
@@ -45,7 +46,7 @@ trait LockManagerSpec extends FlatSpec with Matchers with ScalaFutures {
     }
   }
 
-  "LockManager" should "release a lock" in withActorSystem { system =>
+  it should "release a lock" in withActorSystem { system =>
     implicit val timeout = akka.util.Timeout(10.seconds)
     import system.dispatcher
     val resource = "r1"
@@ -54,8 +55,10 @@ trait LockManagerSpec extends FlatSpec with Matchers with ScalaFutures {
     val l1 = (manager ? LockAcquireRequest(resource, 2.seconds, defaultHoldTimeout)).asInstanceOf[Future[LockGrant]]
     l1.onSuccess { case x  => manager ! LockReleaseRequest(resource) }
 
+    var release = false
     val l2 = (manager ? LockAcquireRequest(resource, 2.seconds, defaultHoldTimeout)).asInstanceOf[Future[LockGrant]]
     l2.onSuccess { case x  =>
+      release = true
       manager ! LockReleaseRequest(resource) }
 
     val l3 = (manager ? LockAcquireRequest(resource, 3.seconds, defaultHoldTimeout)).map(x => true).recover {
@@ -63,11 +66,12 @@ trait LockManagerSpec extends FlatSpec with Matchers with ScalaFutures {
     }
 
     whenReady(l3, 4.seconds) { x =>
+      release should be (true)
       x should be (true)
     }
   }
 
-  "LockManager" should "should handle dead letters" in withActorSystem { system =>
+  it should "handle dead letters" in withActorSystem { system =>
     implicit val timeout = akka.util.Timeout(10.seconds)
     import system.dispatcher
     val resource = "r1"

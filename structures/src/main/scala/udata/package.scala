@@ -9,13 +9,11 @@ package object udata {
 
   object HubActorSystem {
 
-    lazy val system = ActorSystem("hub-server")
+    lazy val system = ActorSystem("hub-system")
 
   }
 
-  class UDataClients (endpoint: String, actorSystem: Option[ActorSystem] = None) {
-
-    implicit lazy val system = actorSystem.getOrElse(UDataClients.system)
+  class UDataClients (endpoint: String)(implicit val system: ActorSystem) {
 
     val baseEndpoint = if(endpoint.endsWith("/")) endpoint else endpoint + "/"
 
@@ -31,12 +29,12 @@ package object udata {
 
   object UDataClients {
 
-    def apply(endpoint: String) = new UDataClients(endpoint, None)
+    def apply(endpoint: String)(implicit system: ActorSystem) = new UDataClients(endpoint)(system)
 
 
-    def apply(endpoint: String, actorSystem: ActorSystem) = new UDataClients(endpoint, Some(actorSystem))
+    def apply(endpoint: String) = new UDataClients(endpoint)(udataSystem)
 
-    implicit lazy val system = ActorSystem("data-structures")
+    implicit private lazy val udataSystem = ActorSystem("udata")
 
   }
 

@@ -12,7 +12,7 @@ import udata.directory.Directory
 
 
 
-class FileSystemDirectory(rootPath: File)(implicit val ec: ExecutionContext) extends Directory {
+class FileSystemDirectory(rootPath: File) extends Directory {
 
   rootPath.mkdirs()
 

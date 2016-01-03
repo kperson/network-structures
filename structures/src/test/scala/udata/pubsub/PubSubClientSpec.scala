@@ -14,6 +14,8 @@ import udata.util.TestUtils._
 
 class PubSubClientSpec extends FlatSpec with Matchers with ScalaFutures with HubServerSpec {
 
+  behavior of "PubSub Client"
+
   def withLockClient(channel: String)(testCode: (PubSubClient, ActorSystem) => Any): Unit = {
     withServer { (host, port) =>
       implicit val system = ActorSystem(randomActorId)
@@ -27,7 +29,7 @@ class PubSubClientSpec extends FlatSpec with Matchers with ScalaFutures with Hub
     }
   }
 
-  "PubSubClient" should "publish and subscribe" in withLockClient("TEST") { (client, _) =>
+  it should "publish and subscribe" in withLockClient("TEST") { (client, _) =>
     val message = "TEST-MESSAGE"
     val p = Promise[String]()
     client.foreach(a => p.success(new String(a)))

@@ -15,6 +15,7 @@ import udata.util.TestUtils._
 
 class DirectoryClientSpec extends FlatSpec with Matchers with ScalaFutures with HubServerSpec {
 
+  behavior of "Directory Client"
 
   def withDirectoryClient(testCode: (DirectoryClient, ActorSystem) => Any): Unit = {
     withServer { (host, port) =>
@@ -29,7 +30,7 @@ class DirectoryClientSpec extends FlatSpec with Matchers with ScalaFutures with 
     }
   }
 
-  "DirectoryClient" should "add a file" in withDirectoryClient { (client, system) =>
+  it should "add a file" in withDirectoryClient { (client, system) =>
     val contents = "FILE-CONTENTS"
     val filePath = "/parent/hello.txt"
     val stream = client.addFile(filePath)
@@ -47,7 +48,7 @@ class DirectoryClientSpec extends FlatSpec with Matchers with ScalaFutures with 
   }
 
 
-  "Directory Client" should "fetch directory contents" in withDirectoryClient { (client, system) =>
+  it should "fetch directory contents" in withDirectoryClient { (client, system) =>
     val contents = "FILE-CONTENTS"
     val filePath = "/parent/hello.txt"
     val stream = client.addFile(filePath)
@@ -67,7 +68,7 @@ class DirectoryClientSpec extends FlatSpec with Matchers with ScalaFutures with 
   }
 
 
-  "Directory Client" should "should fail if no file is found" in withDirectoryClient { (client, system) =>
+  it should "should fail if no file is found" in withDirectoryClient { (client, system) =>
     val filePath = "/parent/hello.txt"
     val fetch = client.fetch(filePath)
     whenReady(fetch.failed, 3.seconds) { con =>
@@ -75,7 +76,7 @@ class DirectoryClientSpec extends FlatSpec with Matchers with ScalaFutures with 
     }
   }
 
-  "Directory Client" should "should fail if no directory is found" in withDirectoryClient { (client, system) =>
+  it should "should fail if no directory is found" in withDirectoryClient { (client, system) =>
     val filePath = "/parent"
     val fetch = client.fetch(filePath)
     whenReady(fetch.failed, 3.seconds) { con =>
@@ -83,7 +84,7 @@ class DirectoryClientSpec extends FlatSpec with Matchers with ScalaFutures with 
     }
   }
 
-  "Directory Client" should "delete a file" in withDirectoryClient { (client, system) =>
+  it should "delete a file" in withDirectoryClient { (client, system) =>
     import system.dispatcher
     val contents = "FILE-CONTENTS"
     val filePath = "/parent/hello.txt"

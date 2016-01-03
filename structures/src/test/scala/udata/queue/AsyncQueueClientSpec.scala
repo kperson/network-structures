@@ -12,6 +12,8 @@ import udata.util.TestUtils._
 
 class AsyncQueueClientSpec extends FlatSpec with Matchers with ScalaFutures with HubServerSpec {
 
+  behavior of "Queue Client"
+
   def withQueueClient(queue: String)(testCode: (AsyncQueueClient, ActorSystem) => Any): Unit = {
     withServer { (host, port) =>
       implicit val system = ActorSystem(randomActorId)
@@ -21,7 +23,7 @@ class AsyncQueueClientSpec extends FlatSpec with Matchers with ScalaFutures with
     }
   }
 
-  "QueueClient" should "enqueue and dequeue" in withQueueClient("TEST") { (client, system) =>
+  it should "enqueue and dequeue" in withQueueClient("TEST") { (client, system) =>
     import system.dispatcher
     val message = "TEST-MESSAGE-1"
     val dequeue = client.dequeue().map(new String(_))
