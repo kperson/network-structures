@@ -10,7 +10,7 @@ import udata.pubsub.PubSubServer
 import udata.queue.QueueServer
 
 
-class HubServer(val directory: Directory, val config: HubServerConfig)
+class HubServer(val directory: Directory, lockProps: Props, pubSubProps: Props, queueProps: Props, countProps: Props)
   extends PubSubServer
   with QueueServer
   with DirectoryServer
@@ -18,9 +18,9 @@ class HubServer(val directory: Directory, val config: HubServerConfig)
   with LockServer
 {
 
-  lazy val lockManager = context.actorOf(Props(Class.forName(config.lockManagerClassName).asInstanceOf[Class[Actor]]))
-  lazy val pubSubManager = context.actorOf(Props(Class.forName(config.pubSubManagerClassName).asInstanceOf[Class[Actor]]))
-  lazy val queueManager = context.actorOf(Props(Class.forName(config.queueManagerClassName).asInstanceOf[Class[Actor]]))
-  lazy val countManager = context.actorOf(Props(Class.forName(config.countManagerClassName).asInstanceOf[Class[Actor]]))
+  lazy val lockManager = context.actorOf(lockProps)
+  lazy val pubSubManager = context.actorOf(pubSubProps)
+  lazy val queueManager = context.actorOf(queueProps)
+  lazy val countManager = context.actorOf(countProps)
 
 }

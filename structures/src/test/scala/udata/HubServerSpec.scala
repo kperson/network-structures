@@ -4,7 +4,7 @@ import java.io.File
 import java.net.ServerSocket
 import java.util.UUID
 
-import akka.actor.{Props, ActorSystem}
+import akka.actor.{Actor, Props, ActorSystem}
 import akka.io.IO
 
 import org.apache.commons.io.FileUtils
@@ -22,17 +22,26 @@ trait HubServerSpec extends FlatSpec {
 
   def withServer(testCode: (String, Int) => Any) {
 
-
     val directory = File.createTempFile("temp", System.nanoTime().toString)
     directory.delete()
     directory.mkdirs()
+
     implicit val system = ActorSystem(randomActorId)
-    import system.dispatcher
+
+    val serverConfig = new HubServerConfig()
+
+    val lockProps = Props(Class.forName(serverConfig.lockManagerClassName).asInstanceOf[Class[Actor]])
+    val pubSubProps = Props(Class.forName(serverConfig.pubSubManagerClassName).asInstanceOf[Class[Actor]])
+    val queueProps = Props(Class.forName(serverConfig.queueManagerClassName).asInstanceOf[Class[Actor]])
+    val countProps = Props(Class.forName(serverConfig.countManagerClassName).asInstanceOf[Class[Actor]])
 
     val handler = system.actorOf(Props(
       new HubServer(
         new FileSystemDirectory(directory),
-        new HubServerConfig()
+        lockProps,
+        pubSubProps,
+        queueProps,
+        countProps
       )).withDispatcher("akka.pubsub-dispatcher"))
 
     //get available port

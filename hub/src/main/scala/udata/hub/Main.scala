@@ -1,6 +1,6 @@
 package udata.hub
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{Actor, ActorSystem, Props}
 import akka.io.IO
 
 import spray.can.Http
@@ -39,12 +39,20 @@ object Main extends App  {
       implicit val system = HubActorSystem.system
 
       val serverConfig = new HubServerConfig()
+
       val directory = Class.forName(serverConfig.directoryManagerClassName).newInstance().asInstanceOf[Directory]
+      val lockProps = Props(Class.forName(serverConfig.lockManagerClassName).asInstanceOf[Class[Actor]])
+      val pubSubProps = Props(Class.forName(serverConfig.pubSubManagerClassName).asInstanceOf[Class[Actor]])
+      val queueProps = Props(Class.forName(serverConfig.queueManagerClassName).asInstanceOf[Class[Actor]])
+      val countProps = Props(Class.forName(serverConfig.countManagerClassName).asInstanceOf[Class[Actor]])
 
       val handler = system.actorOf(Props(
         new HubServer(
           directory,
-          serverConfig
+          lockProps,
+          pubSubProps,
+          queueProps,
+          countProps
         )).withDispatcher("akka.pubsub-dispatcher"))
       IO(Http) ! Http.Bind(handler, interface = config.host, port = config.port)
     case _ => println("--help for details")

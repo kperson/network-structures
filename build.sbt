@@ -6,7 +6,7 @@ resolvers += Resolver.sonatypeRepo("public")
 
 lazy val commonSettings = Seq(
   organization := "com.kperson",
-  version := "0.0.21-SNAPSHOT",
+  version := "0.0.22-SNAPSHOT",
   scalaVersion := "2.11.7",
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
   publishTo := {
