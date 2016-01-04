@@ -41,8 +41,6 @@ trait RichDirectory {
 
   implicit class DirectoryExtension(self: Directory) {
 
-    //import self.ec
-
     def addFile(fileName: String, bytes: Array[Byte]) {
       val stream = self.addFile(fileName.split("/").filter(_ != "").toList)
       stream.write(bytes)

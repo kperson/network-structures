@@ -5,8 +5,8 @@ resolvers += Resolver.sonatypeRepo("public")
 @inline def env(n: String): Option[String] = sys.env.get(n)
 
 lazy val commonSettings = Seq(
-  organization := "com.kperson",
-  version := "0.0.22-SNAPSHOT",
+  organization := "com.udata",
+  version := "0.0.1-SNAPSHOT",
   scalaVersion := "2.11.7",
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
   publishTo := {

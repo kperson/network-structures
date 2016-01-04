@@ -8,17 +8,9 @@ import udata.directory.Directory
 
 import udata.{HubActorSystem, HubServerConfig}
 
-
 case class ServerArguments(host: String = "0.0.0.0", port: Int = 8080)
 
-object Server {
-
-  implicit lazy val system = ActorSystem("hub-server")
-
-}
-
 object Main extends App  {
-
 
   def parser() = new scopt.OptionParser[ServerArguments]("hub") {
 
