@@ -35,7 +35,7 @@ class LockClient(endpoint: String)(implicit system: ActorSystem) extends SprayRe
     val url = new URL(baseURL, s"${resource}/${acquireTimeout.toMillis}/${holdTimeout.toMillis}/")
     val lockRequest = request(HttpRequest(HttpMethods.GET, url.toSprayUri))
     lockRequest.map(_ => resource).recoverWith {
-      case FailedHttpResponse(res) if res.status.intValue == 408 =>
+      case FailedHttpResponse(res) if res.status.intValue == 403 =>
         Future.failed(TimeoutException(acquireTimeout))
     }
   }

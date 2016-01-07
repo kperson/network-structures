@@ -48,7 +48,9 @@ class LocalLockManager extends Actor {
   context.system.eventStream.subscribe(self, classOf[DeadLetter])
 
   def receive = {
-    case LockAcquireRequest(resource, acquireTimeout, holdTimeout) => lock(resource, acquireTimeout, holdTimeout).pipeTo(sender)
+    case LockAcquireRequest(resource, acquireTimeout, holdTimeout) =>
+      val listener = sender
+      lock(resource, acquireTimeout, holdTimeout).pipeTo(listener)
     case LockReleaseRequest(resource, auto) => unlock(resource)
     case LockCheck(lockId, resource, acquire) => check(lockId, resource, acquire)
     case DeadLetter(LockGrant(resource), from, to) => self ! LockReleaseRequest(resource, true)

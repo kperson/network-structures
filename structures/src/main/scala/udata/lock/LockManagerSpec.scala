@@ -23,7 +23,7 @@ trait LockManagerSpec extends FlatSpec with Matchers with ScalaFutures {
   def lockManager(system: ActorSystem): ActorRef
 
   it should "acquire a lock" in withActorSystem { system =>
-    implicit val timeout = akka.util.Timeout(3.seconds)
+    implicit val timeout = akka.util.Timeout(6.seconds)
     val resource = "r1"
     val manager = lockManager(system)
     val lockAcquisition = (manager ? LockAcquireRequest(resource, 3.seconds, defaultHoldTimeout))
@@ -33,7 +33,7 @@ trait LockManagerSpec extends FlatSpec with Matchers with ScalaFutures {
   }
 
   it should "queue a lock" in withActorSystem { system =>
-    implicit val timeout = akka.util.Timeout(3.seconds)
+    implicit val timeout = akka.util.Timeout(6.seconds)
     import system.dispatcher
     val resource = "r1"
     val manager = lockManager(system)
@@ -47,7 +47,7 @@ trait LockManagerSpec extends FlatSpec with Matchers with ScalaFutures {
   }
 
   it should "release a lock" in withActorSystem { system =>
-    implicit val timeout = akka.util.Timeout(10.seconds)
+    implicit val timeout = akka.util.Timeout(6.seconds)
     import system.dispatcher
     val resource = "r1"
     val manager = lockManager(system)
@@ -72,7 +72,7 @@ trait LockManagerSpec extends FlatSpec with Matchers with ScalaFutures {
   }
 
   it should "handle dead letters" in withActorSystem { system =>
-    implicit val timeout = akka.util.Timeout(10.seconds)
+    implicit val timeout = akka.util.Timeout(6.seconds)
     import system.dispatcher
     val resource = "r1"
     val manager = lockManager(system)
@@ -88,6 +88,19 @@ trait LockManagerSpec extends FlatSpec with Matchers with ScalaFutures {
 
     whenReady(l3, 4.seconds) { x =>
       x should be (true)
+    }
+  }
+
+  it should "timeout" in withActorSystem { system =>
+    implicit val timeout = akka.util.Timeout(12.seconds)
+    val resource = "rtimeout"
+    val manager = lockManager(system)
+    (manager ? LockAcquireRequest(resource, 3.seconds, defaultHoldTimeout))
+    val lockAcquisitionShouldTimeout = (manager ? LockAcquireRequest(resource, 3.seconds, defaultHoldTimeout))
+
+
+    whenReady(lockAcquisitionShouldTimeout, 5.seconds) { x =>
+      x shouldBe a [LockTimeout]
     }
   }
 

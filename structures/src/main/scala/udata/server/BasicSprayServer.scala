@@ -113,7 +113,8 @@ class BasicSprayServer extends Actor {
       gets.flatMap { case (matcher, handler) =>
         matcher.matches(req, path).map { case (params, _) => (params, handler) }
       }.headOption match {
-        case Some((params, handler)) => handler(params, sender)
+        case Some((params, handler)) =>
+          handler(params, sender)
         case _ => send404(sender)
       }
     }
@@ -158,6 +159,7 @@ class BasicSprayServer extends Actor {
         }
       }
   }
+
 
 
 }

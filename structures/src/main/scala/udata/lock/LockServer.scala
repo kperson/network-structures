@@ -22,15 +22,15 @@ trait LockServer extends BasicSprayServer {
     val resource = params("resource").head
     val acquireTimeout = params("acquireTimeout").head.toLong.milliseconds
     val holdTimeout = params("holdTimeout").head.toLong.milliseconds
-    val askTimeout: FiniteDuration = acquireTimeout + 2.seconds
-    val fetch = (lockManager ? LockAcquireRequest(resource, acquireTimeout, holdTimeout))(askTimeout).asInstanceOf[Future[LockAcquireResponse]]
+    val fetch = (lockManager ? LockAcquireRequest(resource, acquireTimeout, holdTimeout))(acquireTimeout + 3.seconds).asInstanceOf[Future[LockAcquireResponse]]
 
     fetch onSuccess {
-      case x: LockGrant => client ! HttpResponse(status = 200)
-      case _: LockTimeout => client ! HttpResponse(status = 408)
+      case _: LockGrant => client ! HttpResponse(status = 200)
+      case _: LockTimeout => client ! HttpResponse(status = 403)
     }
 
-    fetch onFailure { case _ => client ! HttpResponse(status = 500)
+    fetch onFailure {
+      case _ => client ! HttpResponse(status = 500)
     }
   }
 

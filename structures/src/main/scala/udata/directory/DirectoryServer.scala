@@ -28,7 +28,7 @@ trait DirectoryServer extends BasicSprayServer {
     val path = params.splatList
     directory.item(path).onSuccess { case x =>
       x match {
-        case Some(FileItem(is)) =>
+        case Some(FileItem(is)) if !path.isEmpty =>
           val contentType = StaticResolver.resolveContentType(path.last)
           context.actorOf(Props(new Streamer(client, is(), contentType)))
         case Some(ChildDirectory(listing)) =>
