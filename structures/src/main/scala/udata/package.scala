@@ -31,10 +31,7 @@ package object udata {
 
     def apply(endpoint: String)(implicit system: ActorSystem) = new UDataClients(endpoint)(system)
 
-
-    def apply(endpoint: String) = new UDataClients(endpoint)(udataSystem)
-
-    implicit private lazy val udataSystem = ActorSystem("udata")
+    implicit lazy val udataSystem = ActorSystem("udata")
 
   }
 
