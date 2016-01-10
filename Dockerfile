@@ -1,4 +1,4 @@
-FROM kperson/ubuntu-java-7:latest
+diFROM kperson/ubuntu-java-7:latest
 
 MAINTAINER Kelton Person <https://github.com/kperson>
 
