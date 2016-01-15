@@ -13,18 +13,29 @@ import scala.concurrent.Promise
 
 import udata.util._
 
+object AsyncUploader {
+
+  case class RequestStarted(ref: ActorRef)
+
+}
 
 class AsyncUploader(url: URL, method: HttpMethod = HttpMethods.POST, headers: List[HttpHeader] = List.empty, promise: Option[Promise[HttpResponse]] = None)(implicit actorSystem: ActorSystem) extends Actor {
 
+  import AsyncUploader._
+
   val buffer:scala.collection.mutable.Queue[WriteCommand] = mutable.Queue()
-  IO(Http) ! Http.Connect(url.getHost, port = url.protocolAdjustedPort, sslEncryption = url.isSecure)
   var server: Option[ActorRef] = None
+
+  IO(Http) ! Http.Connect(url.getHost, port = url.protocolAdjustedPort, sslEncryption = url.isSecure)
+
+
+  def connected = server != None
+  var writing = false
 
   def receive = {
     case Http.Connected(_, _) => {
-      sender ! ChunkedRequestStart(HttpRequest(method, url.getPath, headers = headers))
-      server = Some(sender)
-      self ! SendTrigger
+      val client = sender
+      sender ! ChunkedRequestStart(HttpRequest(method, url.getPath, headers = headers)).withAck(RequestStarted(client))
     }
     case r @ HttpResponse(status, _, _, _) if status.intValue < 400 =>
       promise.foreach { _.success(r) }
@@ -32,9 +43,15 @@ class AsyncUploader(url: URL, method: HttpMethod = HttpMethods.POST, headers: Li
     case r @ HttpResponse(_, _, _, _)  =>
       promise.foreach { _.failure(FailedHttpResponse(r)) }
       context.stop(self)
+    case RequestStarted(ref) =>
+      server = Some(ref)
+      if(!buffer.isEmpty) {
+        self ! SendTrigger
+      }
     case SendTrigger =>
       server.foreach { ref =>
         if (!buffer.isEmpty) {
+          writing = true
           buffer.dequeue() match {
             case SaveBytes(bytes) =>
               ref ! MessageChunk(bytes).withAck(SendTrigger)
@@ -42,10 +59,15 @@ class AsyncUploader(url: URL, method: HttpMethod = HttpMethods.POST, headers: Li
               ref ! ChunkedMessageEnd()
           }
         }
+        else {
+          writing = false
+        }
       }
     case s: WriteCommand =>
       buffer.enqueue(s)
-      self ! SendTrigger
+      if(connected && !writing) {
+        self ! SendTrigger
+      }
   }
 
 }
