@@ -65,7 +65,7 @@ class AsyncUploader(url: URL, method: HttpMethod = HttpMethods.POST, headers: Li
       }
     case s: WriteCommand =>
       buffer.enqueue(s)
-      if(connected && !writing) {
+      if(connected && !writing && buffer.size == 1) {
         self ! SendTrigger
       }
   }
