@@ -25,8 +25,7 @@ class AsyncQueueClientPushActor(url: URL) extends Actor {
 
   import context.system
 
-  val io = IO(Http)
-  io ! Http.Connect(url.getHost, port = url.protocolAdjustedPort, sslEncryption = url.isSecure)
+  IO(Http) ! Http.Connect(url.getHost, port = url.protocolAdjustedPort, sslEncryption = url.isSecure)
 
   val buffer:scala.collection.mutable.Queue[Array[Byte]] = scala.collection.mutable.Queue[Array[Byte]]()
   var server: Option[ActorRef] = None
@@ -63,19 +62,18 @@ class AsyncQueueClientPullActor(url: URL, promise: Promise[Array[Byte]]) extends
   def receive = {
     case Http.Connected(_, _)  =>
       println(s"connected at ${System.currentTimeMillis}")
-      val req = HttpRequest(GET, url.toSprayUri)
-      println(req)
-      sender ! req
+      sender ! HttpRequest(GET, url.toSprayUri)
     case ex:MessageChunk =>
       sender ! Http.Close
       promise.success(ex.data.toByteArray)
       context.stop(self)
     case HttpResponse(status, entity, headers, _) =>
       if(!promise.isCompleted && status.intValue >= 400) {
-        promise.failure(new RuntimeException("TODO"))
+        println("queue listen failed")
+        promise.failure(new RuntimeException("queue listen failed"))
       }
       context.stop(self)
-    case x => println(s"other: ${x}")
+    case x => println(s"other queue message: ${x}")
   }
 
 }
