@@ -10,7 +10,7 @@ import akka.io.Tcp.{CommandFailed, PeerClosed}
 import spray.can.Http
 import spray.can.Http.Connect
 import spray.http.HttpMethods._
-import spray.http.{HttpResponse, MessageChunk, ChunkedRequestStart, HttpRequest}
+import spray.http._
 import scala.concurrent.{Promise, Future}
 import scala.concurrent.duration._
 
@@ -61,8 +61,7 @@ class AsyncQueueClientPullActor(url: URL, promise: Promise[Array[Byte]]) extends
 
   def receive = {
     case Http.Connected(_, _)  =>
-      println(s"connected at ${System.currentTimeMillis}")
-      sender ! HttpRequest(GET, url.toSprayUri)
+      sender ! HttpRequest(GET, url.getPath)
     case ex:MessageChunk =>
       sender ! Http.Close
       promise.success(ex.data.toByteArray)
@@ -73,6 +72,14 @@ class AsyncQueueClientPullActor(url: URL, promise: Promise[Array[Byte]]) extends
         promise.failure(new RuntimeException("queue listen failed"))
       }
       context.stop(self)
+    case CommandFailed(_) =>
+      if(!promise.isCompleted) {
+        println("queue listen failed")
+        promise.failure(new RuntimeException("queue listen failed"))
+      }
+      context.stop(self)
+    case ChunkedResponseStart(_) =>
+      println(s"connected at ${System.currentTimeMillis}")
     case x => println(s"other queue message: ${x}")
   }
 

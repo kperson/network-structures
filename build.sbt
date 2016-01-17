@@ -6,7 +6,7 @@ resolvers += Resolver.sonatypeRepo("public")
 
 lazy val commonSettings = Seq(
   organization := "com.udata",
-  version := "0.0.21-SNAPSHOT",
+  version := "0.0.23-SNAPSHOT",
   scalaVersion := "2.11.7",
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
   publishTo := {
