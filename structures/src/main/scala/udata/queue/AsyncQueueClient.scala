@@ -10,7 +10,7 @@ import akka.io.Tcp.{CommandFailed, PeerClosed}
 import spray.can.Http
 import spray.can.Http.Connect
 import spray.http.HttpMethods._
-import spray.http.{MessageChunk, ChunkedRequestStart, HttpRequest}
+import spray.http.{HttpResponse, MessageChunk, ChunkedRequestStart, HttpRequest}
 import scala.concurrent.{Promise, Future}
 import scala.concurrent.duration._
 
@@ -57,38 +57,25 @@ case class QueueConnectRetry(delay: FiniteDuration)
 class AsyncQueueClientPullActor(url: URL, promise: Promise[Array[Byte]]) extends Actor {
 
   import context.system
-  import context.dispatcher
 
-  private var attempts = 0
-  val io = IO(Http)
-  self ! QueueConnectRetry(0.seconds)
+  IO(Http) ! Http.Connect(url.getHost, port = url.protocolAdjustedPort, sslEncryption = url.isSecure)
 
   def receive = {
     case Http.Connected(_, _)  =>
       println(s"connected at ${System.currentTimeMillis}")
       val req = HttpRequest(GET, url.toSprayUri)
-      if(attempts == 1) {
-        sender ! req
-      }
-      else {
-        context.system.scheduler.scheduleOnce(5.seconds) {
-          sender ! req
-        }
-      }
+      println(req)
+      sender ! req
     case ex:MessageChunk =>
       sender ! Http.Close
       promise.success(ex.data.toByteArray)
       context.stop(self)
-    case PeerClosed =>
-      self ! QueueConnectRetry(5.seconds)
-    case CommandFailed(Connect(_, _, _, _, _)) =>
-      self ! QueueConnectRetry(5.seconds)
-    case QueueConnectRetry(delay) =>
-      context.system.scheduler.scheduleOnce(delay) {
-        attempts = attempts + 1
-        println(s"attempting connection at ${System.currentTimeMillis}")
-        io ! Http.Connect(url.getHost, port = url.protocolAdjustedPort, sslEncryption = url.isSecure)
+    case HttpResponse(status, entity, headers, _) =>
+      if(!promise.isCompleted && status.intValue >= 400) {
+        promise.failure(new RuntimeException("TODO"))
       }
+      context.stop(self)
+    case x => println(s"other: ${x}")
   }
 
 }
