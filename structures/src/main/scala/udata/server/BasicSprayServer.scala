@@ -200,7 +200,6 @@ class ServerToSourceUploader(client: ActorRef, start: ChunkedRequestStart, out: 
     case c: MessageChunk =>
       out.write(c.data.toByteArray)
     case e: ChunkedMessageEnd =>
-      out.flush()
       out.close()
       client ! HttpResponse(status = 204)
       context.stop(self)
