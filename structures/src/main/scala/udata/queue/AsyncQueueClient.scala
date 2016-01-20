@@ -4,13 +4,12 @@ import java.net.URL
 
 import akka.actor.{ActorRef, Props, Actor, ActorSystem}
 import akka.io.IO
-import akka.io.Tcp.{CommandFailed, PeerClosed}
-
+import akka.io.Tcp.{PeerClosed, CommandFailed}
 
 import spray.can.Http
-import spray.can.Http.Connect
 import spray.http.HttpMethods._
 import spray.http._
+
 import scala.concurrent.{Promise, Future}
 import scala.concurrent.duration._
 
@@ -55,6 +54,8 @@ class AsyncQueueClientPushActor(url: URL) extends Actor {
 case class QueueConnectRetry(delay: FiniteDuration)
 class AsyncQueueClientPullActor(url: URL, promise: Promise[Array[Byte]]) extends Actor {
 
+
+  import AsyncQueueClient._
   import context.system
 
   IO(Http) ! Http.Connect(url.getHost, port = url.protocolAdjustedPort, sslEncryption = url.isSecure)
@@ -63,25 +64,35 @@ class AsyncQueueClientPullActor(url: URL, promise: Promise[Array[Byte]]) extends
     case Http.Connected(_, _)  =>
       sender ! HttpRequest(GET, url.getPath)
     case ex:MessageChunk =>
-      sender ! Http.Close
       promise.success(ex.data.toByteArray)
+      sender ! Http.Close
       context.stop(self)
     case HttpResponse(status, entity, headers, _) =>
-      if(!promise.isCompleted && status.intValue >= 400) {
-        println("queue listen failed")
-        promise.failure(new RuntimeException("queue listen failed"))
+      if(status.intValue >= 400) {
+        connectionFailed()
       }
-      context.stop(self)
     case CommandFailed(_) =>
-      if(!promise.isCompleted) {
-        println("queue listen failed")
-        promise.failure(new RuntimeException("queue listen failed"))
-      }
-      context.stop(self)
+      connectionFailed()
+    case PeerClosed =>
+      connectionFailed()
     case ChunkedResponseStart(_) =>
       println(s"connected at ${System.currentTimeMillis}")
     case x => println(s"other queue message: ${x}")
   }
+
+  def connectionFailed() {
+    if(!promise.isCompleted) {
+      println("queue listen failed")
+      promise.failure(QueueConnectFailedException())
+      context.stop(self)
+    }
+  }
+
+}
+
+object AsyncQueueClient {
+
+  case class QueueConnectFailedException() extends RuntimeException("queue connection failed")
 
 }
 
