@@ -52,10 +52,10 @@ class DirectoryClient(endpoint: String)(implicit system: ActorSystem) extends Sp
   }
 
   /** fetches a file or list directory
-   *
-   * @param path of file of directory
-   * @return path contents enum
-   */
+    *
+    * @param path of file of directory
+    * @return path contents enum
+    */
   def fetch(path: String) : Future[PathContents] = {
     val url = new URL(baseURL, cleanPath(path))
     val inputStream = new HTTPDownloadInputStream(url)
@@ -71,6 +71,24 @@ class DirectoryClient(endpoint: String)(implicit system: ActorSystem) extends Sp
     res.recoverWith {
       case FailedHttpResponse(r) if r.status.intValue == 404 => Future.failed(ResourceNotFoundException())
       case x => println(x)
+        Future.failed(x)
+    }
+  }
+
+
+  /** fetches a file or list directory
+    *
+    * @param path of file of directory
+    * @return path contents enum
+    */
+  def fetch(path: String, outputStream: OutputStream) {
+    val url = new URL(baseURL, cleanPath(path))
+    val inputStream = new HTTPDownloadWriter(url, outputStream = outputStream)
+    inputStream.future.recoverWith {
+      case FailedHttpResponse(r) if r.status.intValue == 404 =>
+        Future.failed(ResourceNotFoundException())
+      case x =>
+        println(x)
         Future.failed(x)
     }
   }

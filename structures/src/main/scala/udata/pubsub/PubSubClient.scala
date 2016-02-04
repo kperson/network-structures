@@ -33,7 +33,7 @@ class PubSubPushActor(url: URL) extends Actor {
   def receive = {
     case Http.Connected(_, _)  =>
       server = Some(sender)
-      sender ! ChunkedRequestStart(HttpRequest(POST, url.toSprayUri))
+      sender ! ChunkedRequestStart(HttpRequest(POST, url.getPath))
       self ! Send
     case Send =>
       server.foreach { ref =>
@@ -48,13 +48,13 @@ class PubSubPushActor(url: URL) extends Actor {
         server.foreach { ref => self ! Send }
       }
     case PeerClosed =>
-      println("push peer closed")
+      //println("push peer closed")
       self ! PubSubConnectRetry
     case CommandFailed(Connect(_, _, _, _, _)) =>
-      println("push connection failed")
+      //println("push connection failed")
       self ! PubSubConnectRetry
     case PubSubConnectRetry =>
-      println("push retrying")
+      //println("push retrying")
       context.system.scheduler.scheduleOnce(5.seconds) {
         io ! Http.Connect(url.getHost, port = url.protocolAdjustedPort, sslEncryption = url.isSecure)
       }
@@ -73,18 +73,18 @@ class PubSubPullActor(url: URL, pubSub: PubSub[Array[Byte]]) extends Actor {
 
   def receive = {
     case Http.Connected(_, _)  =>
-      val req = HttpRequest(GET, url.toSprayUri)
+      val req = HttpRequest(GET, url.getPath)
       sender ! req
     case ex:MessageChunk =>
       pubSub.processIncoming(ex.data.toByteArray)
     case PeerClosed =>
-      println("pull peer closed")
+      //println("pull peer closed")
       self ! PubSubConnectRetry
     case CommandFailed(Connect(_, _, _, _, _)) =>
       println("pull connection failed")
       self ! PubSubConnectRetry
     case PubSubConnectRetry =>
-      println("pull retrying")
+      //println("pull retrying")
       context.system.scheduler.scheduleOnce(5.seconds) {
         io ! Http.Connect(url.getHost, port = url.protocolAdjustedPort, sslEncryption = url.isSecure)
       }

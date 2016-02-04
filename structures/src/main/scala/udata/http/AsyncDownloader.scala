@@ -17,7 +17,6 @@ import udata.util._
 
 class AsyncDownloader(url: URL, method: HttpMethod = HttpMethods.GET, headers: List[HttpHeader] = List.empty, outputStream: OutputStream, promise: Option[Promise[HttpResponse]] = None)(implicit actorSystem: ActorSystem) extends Actor {
 
-  val buffer:scala.collection.mutable.Queue[WriteCommand] = mutable.Queue()
   IO(Http) ! Http.Connect(url.getHost, port = url.protocolAdjustedPort, sslEncryption = url.isSecure)
 
   def receive = {
@@ -28,7 +27,6 @@ class AsyncDownloader(url: URL, method: HttpMethod = HttpMethods.GET, headers: L
     case MessageChunk(data, _) =>
       outputStream.write(data.toByteArray)
     case ChunkedMessageEnd(_, _) =>
-      outputStream.flush()
       outputStream.close()
       context.stop(self)
     case r @ HttpResponse(status, _, _, _) if status.intValue >= 400 =>

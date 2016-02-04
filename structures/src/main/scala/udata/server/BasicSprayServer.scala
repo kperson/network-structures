@@ -166,6 +166,7 @@ class BasicSprayServer extends Actor {
 
 case class StreamAck()
 
+case object MessageEndReceived
 class Streamer(client: ActorRef, is: InputStream, contentType: Option[String] = None) extends Actor  {
 
   val mediaType = contentType.map(MediaType.custom(_)).getOrElse(`application/octet-stream`)
@@ -184,10 +185,12 @@ class Streamer(client: ActorRef, is: InputStream, contentType: Option[String] = 
         client ! MessageChunk(iter.next).withAck(StreamAck())
       }
       else {
-        client ! ChunkedMessageEnd()
-        is.close()
-        context.stop(self)
+        client ! ChunkedMessageEnd().withAck(MessageEndReceived)
       }
+    case MessageEndReceived =>
+      is.close()
+      context.stop(self)
+      MessageEndReceived
   }
 }
 

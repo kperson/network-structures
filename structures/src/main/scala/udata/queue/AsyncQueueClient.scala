@@ -33,7 +33,7 @@ class AsyncQueueClientPushActor(url: URL) extends Actor {
 
     case Http.Connected(_, _)  =>
       server = Some(sender)
-      sender ! ChunkedRequestStart(HttpRequest(POST, url.toSprayUri))
+      sender ! ChunkedRequestStart(HttpRequest(POST, url.getPath))
       self ! SendEnqueue
     case SendEnqueue =>
       server.foreach { ref =>
