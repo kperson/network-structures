@@ -164,7 +164,7 @@ class BasicSprayServer extends Actor {
 
 }
 
-case class StreamAck()
+case object StreamAck
 
 case object MessageEndReceived
 class Streamer(client: ActorRef, is: InputStream, contentType: Option[String] = None) extends Actor  {
@@ -172,17 +172,15 @@ class Streamer(client: ActorRef, is: InputStream, contentType: Option[String] = 
   val mediaType = contentType.map(MediaType.custom(_)).getOrElse(`application/octet-stream`)
   val headers = List(`Content-Type`(ContentType(mediaType)), RawHeader("X-Type", "File"))
 
-  client ! ChunkedResponseStart(HttpResponse(headers = headers, status = 200)).withAck(StreamAck())
-  var iter: Iterator[Array[Byte]] = null
+  client ! ChunkedResponseStart(HttpResponse(headers = headers, status = 200)).withAck(StreamAck)
 
   val s = is.stream(4096)
-  iter = s.iterator
-
+  val iter = s.iterator
 
   def receive = {
-    case StreamAck() =>
+    case StreamAck =>
       if(iter.hasNext) {
-        client ! MessageChunk(iter.next).withAck(StreamAck())
+        client ! MessageChunk(iter.next).withAck(StreamAck)
       }
       else {
         client ! ChunkedMessageEnd().withAck(MessageEndReceived)
@@ -190,7 +188,8 @@ class Streamer(client: ActorRef, is: InputStream, contentType: Option[String] = 
     case MessageEndReceived =>
       is.close()
       context.stop(self)
-      MessageEndReceived
+    case x: Http.ConnectionClosed =>
+      self ! MessageEndReceived
   }
 }
 

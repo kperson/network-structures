@@ -7,7 +7,7 @@ trait RichStream {
   implicit class InputStreamExtension(self: InputStream) {
 
     def pipeToOutputStream(outputStream: OutputStream) = {
-      self.stream(2048).foreach(outputStream.write(_))
+      self.stream(4096).foreach(outputStream.write(_))
     }
 
     def stream(bufferSize: Int) : Stream[Array[Byte]] = {
@@ -21,8 +21,7 @@ trait RichStream {
         else {
           true
         }
-      }
-        .map {
+      }.map {
         buffer.take(_)
       }
       stream
