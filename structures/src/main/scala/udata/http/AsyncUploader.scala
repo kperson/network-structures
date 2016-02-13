@@ -19,7 +19,8 @@ object AsyncUploader {
 
 }
 
-class AsyncUploader(url: URL, method: HttpMethod = HttpMethods.POST, headers: List[HttpHeader] = List.empty, promise: Option[Promise[HttpResponse]] = None)(implicit actorSystem: ActorSystem) extends Actor {
+case object TerminatedStream
+class AsyncUploader(url: URL, method: HttpMethod = HttpMethods.POST, headers: List[HttpHeader] = List.empty, promise: Option[Promise[HttpResponse]] = None, closePromise: Option[Promise[Unit]] = None)(implicit actorSystem: ActorSystem) extends Actor {
 
   import AsyncUploader._
 
@@ -39,6 +40,7 @@ class AsyncUploader(url: URL, method: HttpMethod = HttpMethods.POST, headers: Li
     }
     case r @ HttpResponse(status, _, _, _) if status.intValue < 400 =>
       promise.foreach { _.success(r) }
+      closePromise.filter(!_.isCompleted).foreach(_.success(Unit))
       context.stop(self)
     case r @ HttpResponse(_, _, _, _)  =>
       promise.foreach { _.failure(FailedHttpResponse(r)) }
@@ -56,7 +58,8 @@ class AsyncUploader(url: URL, method: HttpMethod = HttpMethods.POST, headers: Li
             case SaveBytes(bytes) =>
               ref ! MessageChunk(bytes).withAck(SendTrigger)
             case CloseStorage =>
-              ref ! ChunkedMessageEnd()
+              //really, really, really, bad hack
+              ref ! MessageChunk(terminatingStr).withAck(TerminatedStream)
           }
         }
         else {
@@ -68,6 +71,13 @@ class AsyncUploader(url: URL, method: HttpMethod = HttpMethods.POST, headers: Li
       if(connected && !writing && buffer.size == 1) {
         self ! SendTrigger
       }
+    case TerminatedStream =>
+      server.foreach { ref =>
+        ref ! ChunkedMessageEnd(terminatingStr).withAck(CloseConclusion)
+      }
+    case CloseConclusion =>
+      closePromise.filter(!_.isCompleted).foreach(_.success(Unit))
+      context.stop(self)
   }
 
 }

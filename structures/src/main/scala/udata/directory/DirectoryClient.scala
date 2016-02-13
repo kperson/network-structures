@@ -36,7 +36,7 @@ class DirectoryClient(endpoint: String)(implicit system: ActorSystem) extends Sp
    * @param path file path
    * @return an outstream to store data
    */
-  def addFile(path: String) : OutputStream = {
+  def addFile(path: String) : HTTPUploadOutputStream = {
     val url = new URL(baseURL, cleanPath(path))
     outStreamForURL(url)
   }
@@ -88,7 +88,6 @@ class DirectoryClient(endpoint: String)(implicit system: ActorSystem) extends Sp
       case FailedHttpResponse(r) if r.status.intValue == 404 =>
         Future.failed(ResourceNotFoundException())
       case x =>
-        println(x)
         Future.failed(x)
     }
   }
@@ -108,7 +107,7 @@ class DirectoryClient(endpoint: String)(implicit system: ActorSystem) extends Sp
   }
 
   def delete(path: List[String]) : Future[Unit] = delete(path.mkString("/"))
-  def addFile(path: List[String]) : OutputStream = addFile(path.mkString("/"))
+  def addFile(path: List[String]) : HTTPUploadOutputStream = addFile(path.mkString("/"))
   def fetch(path: List[String]) : Future[PathContents] = fetch(path.mkString("/"))
   def fetchFile(path: List[String]) : Future[FileContent] = fetchFile(path.mkString("/"))
   def fetchDirectory(path: List[String]) : Future[DirectoryListing] = fetchDirectory(path.mkString("/"))
@@ -122,7 +121,7 @@ class DirectoryClient(endpoint: String)(implicit system: ActorSystem) extends Sp
     }
   }
 
-  private def outStreamForURL(url: URL) : OutputStream = {
+  private def outStreamForURL(url: URL) : HTTPUploadOutputStream = {
     new HTTPUploadOutputStream(url, HttpMethods.POST)
   }
 

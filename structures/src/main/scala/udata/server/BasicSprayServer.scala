@@ -1,6 +1,6 @@
 package udata.server
 
-import java.io.{OutputStream, InputStream}
+import java.io.{FileOutputStream, OutputStream, InputStream}
 
 import akka.actor.{ActorContext, Props, ActorRef, Actor}
 
@@ -13,12 +13,14 @@ import spray.http.HttpMethods._
 import spray.http.MediaTypes._
 import spray.http._
 import spray.io.CommandWrapper
+import udata.http.CloseConclusion
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.concurrent.{Promise, Future}
 import scala.concurrent.duration._
 
 import udata.util._
+import udata.http._
 
 
 class ByteReader(promise: Promise[Array[Byte]]) extends Actor {
@@ -196,14 +198,36 @@ class Streamer(client: ActorRef, is: InputStream, contentType: Option[String] = 
 
 class ServerToSourceUploader(client: ActorRef, start: ChunkedRequestStart, out: OutputStream) extends Actor  {
 
-  client ! CommandWrapper(SetRequestTimeout(Duration.Inf))
+  val megaBytesSize = 1000000
+  var bytesProcessed = 0
+  var closed = false
 
   def receive = {
     case c: MessageChunk =>
-      out.write(c.data.toByteArray)
+      val toWrite = c.data.toByteArray
+      val terminatingMatch = new String(toWrite)
+      if(terminatingMatch == terminatingStr) {
+        closeStream()
+      }
+      else {
+        bytesProcessed = bytesProcessed + toWrite.length
+        out.write(toWrite)
+        //flush the stream every one megabyte to keep buffers small
+        if (bytesProcessed >= megaBytesSize) {
+          out.flush()
+          bytesProcessed = 0
+        }
+      }
     case e: ChunkedMessageEnd =>
-      out.close()
-      client ! HttpResponse(status = 204)
+      closeStream()
       context.stop(self)
   }
+
+  def closeStream() {
+    if(!closed) {
+      closed = true
+      out.close()
+    }
+  }
+
 }

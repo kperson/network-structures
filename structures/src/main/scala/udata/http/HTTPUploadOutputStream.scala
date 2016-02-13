@@ -13,10 +13,14 @@ import scala.concurrent.Promise
 class HTTPUploadOutputStream(url: URL, method: HttpMethod = HttpMethods.POST, headers: List[HttpHeader] = List.empty)(implicit actorSystem: ActorSystem) extends OutputStream {
 
   private val promise = Promise[HttpResponse]()
-  val uploader = actorSystem.actorOf(Props(new AsyncUploader(url, method, headers, Some(promise))))
+  private val closePromise = Promise[Unit]()
+
+  val uploader = actorSystem.actorOf(Props(new AsyncUploader(url, method, headers, Some(promise), Some(closePromise))))
   private var isCompleted = false
 
   def future = promise.future
+  def closeFuture = closePromise.future
+
 
   def write(b: Int) {
     val lower8 = b & 0xFF
@@ -32,10 +36,6 @@ class HTTPUploadOutputStream(url: URL, method: HttpMethod = HttpMethods.POST, he
   }
 
   override def close() {
-    complete()
-  }
-
-  override def flush() {
     complete()
   }
 
