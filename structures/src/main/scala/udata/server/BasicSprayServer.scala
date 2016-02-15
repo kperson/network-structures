@@ -198,29 +198,14 @@ class Streamer(client: ActorRef, is: InputStream, contentType: Option[String] = 
 
 class ServerToSourceUploader(client: ActorRef, start: ChunkedRequestStart, out: OutputStream) extends Actor  {
 
-  val megaBytesSize = 1000000
-  var bytesProcessed = 0
   var closed = false
 
   def receive = {
     case c: MessageChunk =>
-      val toWrite = c.data.toByteArray
-      val terminatingMatch = new String(toWrite)
-      if(terminatingMatch == terminatingStr) {
-        closeStream()
-      }
-      else {
-        bytesProcessed = bytesProcessed + toWrite.length
-        out.write(toWrite)
-        //flush the stream every one megabyte to keep buffers small
-        if (bytesProcessed >= megaBytesSize) {
-          out.flush()
-          bytesProcessed = 0
-        }
-      }
-    case e: ChunkedMessageEnd =>
+      out.write(c.data.toByteArray)
+    case _: ChunkedMessageEnd =>
       closeStream()
-      context.stop(self)
+      client ! HttpResponse(204)
   }
 
   def closeStream() {

@@ -7,9 +7,6 @@ import scala.concurrent.duration.FiniteDuration
 
 package object http {
 
-  //really, really, really bad back to deal with S3's like of streaming
-  val terminatingStr = "5HUwroufTEmx6kietNtQ4xDRwoe7KmVuxGH9gu0dhVEFeHB3HZg6zHZrTDahNM9zdueH3lRToNBGpiRV"
-
   case object SendTrigger
   case object CloseConclusion
 

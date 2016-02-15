@@ -30,6 +30,21 @@ class DirectoryClientSpec extends FlatSpec with Matchers with ScalaFutures with 
     }
   }
 
+  it should "listen for close" in withDirectoryClient { (client, system) =>
+    val contents = "FILE-CONTENTS"
+    val filePath = "/parent/bob.txt"
+    val stream = client.addFile(filePath)
+    stream.write(contents.getBytes)
+    stream.close()
+    import system.dispatcher
+    val fetch = stream.closeFuture.flatMap { _ => client.fetch(filePath) }
+    whenReady(fetch, 2.seconds) { con =>
+      val fetchedContents = con.asInstanceOf[FileContent]
+      val fileContents = new String(fetchedContents.inputStream.stream(4096).flatten.toArray)
+      fileContents should be (contents)
+    }
+  }
+
   it should "add a file" in withDirectoryClient { (client, system) =>
     val contents = "FILE-CONTENTS"
     val filePath = "/parent/hello.txt"

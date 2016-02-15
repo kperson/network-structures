@@ -19,10 +19,11 @@ object AsyncUploader {
 
 }
 
-case object TerminatedStream
 class AsyncUploader(url: URL, method: HttpMethod = HttpMethods.POST, headers: List[HttpHeader] = List.empty, promise: Option[Promise[HttpResponse]] = None, closePromise: Option[Promise[Unit]] = None)(implicit actorSystem: ActorSystem) extends Actor {
 
+
   import AsyncUploader._
+
 
   val buffer:scala.collection.mutable.Queue[WriteCommand] = mutable.Queue()
   var server: Option[ActorRef] = None
@@ -58,8 +59,7 @@ class AsyncUploader(url: URL, method: HttpMethod = HttpMethods.POST, headers: Li
             case SaveBytes(bytes) =>
               ref ! MessageChunk(bytes).withAck(SendTrigger)
             case CloseStorage =>
-              //really, really, really, bad hack
-              ref ! MessageChunk(terminatingStr).withAck(TerminatedStream)
+              ref ! ChunkedMessageEnd()
           }
         }
         else {
@@ -71,13 +71,6 @@ class AsyncUploader(url: URL, method: HttpMethod = HttpMethods.POST, headers: Li
       if(connected && !writing && buffer.size == 1) {
         self ! SendTrigger
       }
-    case TerminatedStream =>
-      server.foreach { ref =>
-        ref ! ChunkedMessageEnd(terminatingStr).withAck(CloseConclusion)
-      }
-    case CloseConclusion =>
-      closePromise.filter(!_.isCompleted).foreach(_.success(Unit))
-      context.stop(self)
   }
 
 }
