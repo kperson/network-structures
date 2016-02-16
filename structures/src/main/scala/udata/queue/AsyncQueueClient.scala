@@ -9,6 +9,7 @@ import akka.io.Tcp.{PeerClosed, CommandFailed}
 import spray.can.Http
 import spray.http.HttpMethods._
 import spray.http._
+import udata.queue.AsyncQueueClient.QueueConnectFailedException
 
 import scala.concurrent.{Promise, Future}
 import scala.concurrent.duration._
@@ -47,6 +48,18 @@ class AsyncQueueClientPushActor(url: URL) extends Actor {
       if(buffer.length == 1 && server != None) {
         self ! SendEnqueue
       }
+    case CommandFailed(_) =>
+      connectionFailed()
+    case PeerClosed =>
+      connectionFailed()
+  }
+
+  def connectionFailed() {
+    server = None
+    import context.dispatcher
+    system.scheduler.scheduleOnce(2.seconds) {
+      IO(Http) ! Http.Connect(url.getHost, port = url.protocolAdjustedPort, sslEncryption = url.isSecure)
+    }
   }
 
 }
